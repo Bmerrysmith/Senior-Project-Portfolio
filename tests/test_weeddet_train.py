@@ -20,10 +20,10 @@ from PIL import Image
 
 from agrinav.models import weeddet_v6b as wd
 from agrinav.training.weeddet_train import (
-    DEFAULT_CLASS_NAMES,
-    _CocoSplitDataset,
     _HARD_DEFAULTS,
+    DEFAULT_CLASS_NAMES,
     _build_parser,
+    _CocoSplitDataset,
     _make_riceseg_backbone_init,
     build_config,
     load_checkpoint_model,
