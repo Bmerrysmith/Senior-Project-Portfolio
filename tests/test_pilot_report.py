@@ -301,10 +301,16 @@ def test_series_skips_non_finite_so_a_nan_epoch_cannot_poison_the_advice():
     from agrinav.training.pilot_report import _series, recommend_grad_clip
 
     rows = [
-        {"grad_norm/p99": float("nan"), "grad_norm/clipped_fraction": 1.0,
-         "grad_norm/clip_threshold": 0.5},
-        {"grad_norm/p99": 12.74, "grad_norm/clipped_fraction": 1.0,
-         "grad_norm/clip_threshold": 0.5},
+        {
+            "grad_norm/p99": float("nan"),
+            "grad_norm/clipped_fraction": 1.0,
+            "grad_norm/clip_threshold": 0.5,
+        },
+        {
+            "grad_norm/p99": 12.74,
+            "grad_norm/clipped_fraction": 1.0,
+            "grad_norm/clip_threshold": 0.5,
+        },
     ]
     assert _series(rows, "grad_norm/p99") == [12.74]
 

@@ -51,6 +51,7 @@ flowchart LR
 - `src/agrinav/evaluation/` — model-to-COCO conversion and metric handling.
 - `tests/` — unit, integration, regression, and synthetic vision-pipeline tests.
 - `configs/` — path-free, versioned experiment configurations.
+- `docs/TRAINING_QUICKSTART.md` — a public, path-safe detector training example.
 - `docs/PORTFOLIO_RESULTS.md` — metric provenance and honest claim boundaries.
 
 ## Five-minute technical walkthrough
