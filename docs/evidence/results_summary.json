@@ -1,0 +1,74 @@
+{
+  "schema_version": "agrinav.public-portfolio-results.v2",
+  "source": {
+    "repository": "Bmerrysmith/Autonomous-tractor-system",
+    "commit": "ed93be5",
+    "branch": "master",
+    "snapshot_prepared": "2026-09-12"
+  },
+  "dataset": {
+    "images": 2579,
+    "boxes": 81201,
+    "rice_protect_boxes": 70750,
+    "weed_target_boxes": 10451,
+    "exif_normalized_images": 214,
+    "boxes_clipped": 115,
+    "annotations_rejected": 3,
+    "duplicate_image_hashes": 0,
+    "splits": {
+      "train": {"images": 1800, "boxes": 59691},
+      "validation": {"images": 518, "boxes": 15226},
+      "test": {"images": 261, "boxes": 6284}
+    }
+  },
+  "phase1": {
+    "best_miou": 0.5827,
+    "best_epoch": 30,
+    "reproduced_within_miou": 0.001
+  },
+  "phase2_pilot": {
+    "steps_per_arm": 450,
+    "clipped_fraction_at_0_5": 1.0,
+    "riceseg": {
+      "grad_norm_p50": 5.377,
+      "grad_norm_p99": 10.538,
+      "grad_norm_max": 13.996,
+      "positive_classification_loss_reduction_percent": 50.8
+    },
+    "imagenet": {
+      "grad_norm_p50": 8.207,
+      "grad_norm_p99": 32.907,
+      "grad_norm_max": 39.667,
+      "positive_classification_loss_reduction_percent": 26.0
+    }
+  },
+  "matched_overfit_8_60_epochs": {
+    "grad_clip_0_5": {"ap": 0.0012, "ap50": 0.0064, "ar100": 0.0286},
+    "grad_clip_120": {"ap": 0.0628, "ap50": 0.3331, "ar100": 0.2563},
+    "ap50_multiplier": 52.0
+  },
+  "decoded_overfit_gate": {
+    "images": 16,
+    "epochs": 150,
+    "ap": 0.5224,
+    "ap50": 0.8750,
+    "ar100": 0.6315,
+    "confidence_ratio": 1.01,
+    "initial_loss": 4.5681,
+    "final_loss": 0.2309,
+    "clipped_fraction": 0.0
+  },
+  "verification_record": {
+    "tests_passing": 308,
+    "subtests_passing": 16,
+    "snapshot_tests_rerun": 109,
+    "snapshot_subtests_rerun": 16,
+    "snapshot_torch_tests_rerun": false
+  },
+  "claim_boundaries": [
+    "Overfit metrics are correctness gates, not generalization metrics",
+    "Warm-start pilot is two epochs and one seed",
+    "No current maintained detector baseline result",
+    "No external farm or season validation"
+  ]
+}

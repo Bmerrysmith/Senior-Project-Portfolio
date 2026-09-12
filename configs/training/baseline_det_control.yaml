@@ -1,0 +1,54 @@
+# Baseline CONTROL -- stock torchvision detector on the phase-2 rice/weed split.
+#
+# Purpose: give the WeedDet number something to be measured against. An AP is not
+# a result until a maintained reference detector has been run on the same images,
+# at the same resolution, through the same evaluator.
+#
+# Every field that CAN be shared with configs/training/detector_rice_phase2.yaml
+# IS shared, and deliberately so -- a baseline trained on a different budget is a
+# different experiment, not a control. The fields that differ are listed at the
+# bottom with the reason each one had to.
+#
+#   agrinav baseline-detector \
+#     --arch fasterrcnn_resnet50_fpn_v2 \
+#     --config configs/training/baseline_det_control.yaml \
+#     --ann-file        <data>/annotations/instances_train.coco.json \
+#     --images-root     <data>/images/train \
+#     --val-ann-file    <data>/annotations/instances_valid.coco.json \
+#     --val-images-root <data>/images/valid \
+#     --out-dir <drive>/rice_phase2_v2/runs/baseline_frcnn
+
+# --- shared with the WeedDet arm: do not change one without the other ---
+class_names: [rice_protect, weed_target]
+img_size: 512
+num_epochs: 18
+seed: 42
+deterministic: false
+augment: true
+use_amp: true
+grad_clip: 0.5
+min_lr: 0.00001
+weight_decay: 0.0001
+momentum: 0.9
+val_ap_interval: 2
+
+# --- evaluation protocol: MUST match the WeedDet arm exactly ---
+# These are the numbers that decide whether two APs are the same quantity.
+score_threshold: 0.05
+nms_iou: 0.50
+max_detections: 100        # COCO standard; anything else is not a comparable AP
+eval_batch_size: 8
+
+# --- differs from the WeedDet arm, with the reason ---
+arch: fasterrcnn_resnet50_fpn_v2
+init: coco                 # COCO-pretrained then head-replaced. The strong
+                           # reference. Use `imagenet` for an init-matched arm.
+batch_size: 4              # a two-stage detector does not fit at WeedDet's 8 on
+                           # the same card; throughput, not recipe, forces this
+base_lr: 0.005             # torchvision's reference SGD recipe, not WeedDet's
+                           # 0.001. Tuning the baseline down to WeedDet's LR
+                           # would understate it, which is the one direction a
+                           # baseline must never be wrong in
+num_workers: 2
+warmup_iters: 500          # iterations, not the WeedDet warmup_factor form
+trainable_backbone_layers: 3

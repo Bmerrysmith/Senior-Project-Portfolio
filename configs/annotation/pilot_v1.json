@@ -1,0 +1,97 @@
+{
+  "schema_version": "1.0.0",
+  "pilot_name": "agrinav-annotation-bakeoff-v1",
+  "purpose": "Compare proposal generators by human-correction cost and safety-relevant mask quality.",
+  "total_images": 200,
+  "gold_images": 40,
+  "gold_annotation": {
+    "annotators_per_image": 2,
+    "independent_before_adjudication": true,
+    "test_or_challenge_review_fraction": 1.0
+  },
+  "sampling_targets": {
+    "weed_positive_fraction_min": 0.35,
+    "verified_negative_or_nonactionable_fraction_min": 0.25,
+    "hard_condition_fraction_min": 0.30,
+    "max_tiles_per_source_photo": 2,
+    "hard_conditions": [
+      "tiny_weed",
+      "rice_weed_overlap",
+      "water_reflection",
+      "glare",
+      "duckweed",
+      "senescence",
+      "blur",
+      "partial_border",
+      "dense_canopy",
+      "unknown_vegetation"
+    ]
+  },
+  "canonical_labels": [
+    "rice_protect",
+    "weed_target",
+    "unknown_vegetation",
+    "non_target_aquatic",
+    "ground_exclusion"
+  ],
+  "proposal_methods": [
+    {
+      "id": "locateanything_sam21",
+      "box_model": "nvidia/LocateAnything-3B",
+      "box_model_revision": "PIN_BEFORE_RUN",
+      "mask_model": "facebook/sam2.1-hiera-large",
+      "mask_model_revision": "PIN_BEFORE_RUN",
+      "prompts": [
+        "cultivated rice plants",
+        "weeds growing among the rice plants",
+        "ambiguous vegetation that may not be rice"
+      ],
+      "notes": "Research-only LocateAnything weights. Generate proposals only; do not use in a commercial release."
+    },
+    {
+      "id": "groundingdino_sam21",
+      "box_model": "IDEA-Research/grounding-dino-base",
+      "box_model_revision": "PIN_BEFORE_RUN",
+      "mask_model": "facebook/sam2.1-hiera-large",
+      "mask_model_revision": "PIN_BEFORE_RUN",
+      "prompts": [
+        "rice plant",
+        "weed",
+        "grass weed",
+        "broadleaf weed",
+        "unknown plant"
+      ],
+      "notes": "Run a threshold sweep on gold data; never normalize every detected plant to rice."
+    },
+    {
+      "id": "sam3_text_mask",
+      "model": "facebook/sam3",
+      "model_revision": "PIN_BEFORE_RUN",
+      "prompts": [
+        "rice plants",
+        "weeds among rice plants",
+        "unknown vegetation"
+      ],
+      "notes": "Checkpoint access and license must be recorded before the bakeoff."
+    }
+  ],
+  "primary_selection_metric": "median_human_seconds_per_accepted_image",
+  "quality_constraints": {
+    "weed_recall_iou_50_min": 0.95,
+    "report_weed_recall_iou_75": true,
+    "median_mask_iou_min": 0.80,
+    "class_status_agreement_min": 0.98,
+    "median_box_iou_min": 0.85,
+    "invalid_duplicate_oob_rate_max": 0.001
+  },
+  "report_slices": [
+    "proposal_method",
+    "source_dataset",
+    "source_group",
+    "class",
+    "object_size",
+    "hard_condition",
+    "annotator"
+  ],
+  "acceptance_rule": "Choose the fastest method that satisfies every quality constraint on the independent gold set; if none passes, use interactive SAM2.1 in CVAT without batch pseudo-label acceptance."
+}

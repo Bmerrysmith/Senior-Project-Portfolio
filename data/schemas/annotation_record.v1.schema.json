@@ -1,0 +1,270 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agrinav.local/schemas/annotation_record.v1.schema.json",
+  "title": "AgriNav per-image annotation/proposal record v1",
+  "description": "One JSONL row. Unknown metadata is represented by explicit nulls. Model output remains a proposal until human review is accepted; this schema documents structure while scripts/validate_annotation_package.py enforces ontology and cross-field safety invariants.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_id",
+    "image_id",
+    "source",
+    "provenance",
+    "review",
+    "verified_empty",
+    "unusable",
+    "annotations"
+  ],
+  "properties": {
+    "schema_version": {"const": "agrinav.annotation_record.v1"},
+    "record_id": {"type": "string", "minLength": 1},
+    "image_id": {"type": "string", "minLength": 1},
+    "source": {
+      "description": "Immutable image lineage and group-safe split assignment. Null is required when optional capture metadata is unknown.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dataset_id", "dataset_version", "image_uri", "source_image_sha256", "width", "height", "country", "site_id", "field_id", "session_id", "capture_pass_id", "frame_id", "source_photo_id", "group_id", "split", "capture_metadata"],
+      "properties": {
+        "dataset_id": {"type": "string", "minLength": 1},
+        "dataset_version": {"type": ["string", "null"], "minLength": 1},
+        "image_uri": {"type": "string", "minLength": 1},
+        "source_image_sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+        "width": {"type": "integer", "minimum": 1},
+        "height": {"type": "integer", "minimum": 1},
+        "country": {"type": ["string", "null"], "minLength": 1},
+        "site_id": {"type": ["string", "null"], "minLength": 1},
+        "field_id": {"type": ["string", "null"], "minLength": 1},
+        "session_id": {"type": ["string", "null"], "minLength": 1},
+        "capture_pass_id": {"type": ["string", "null"], "minLength": 1},
+        "frame_id": {"type": ["string", "null"], "minLength": 1},
+        "source_photo_id": {"type": ["string", "null"], "minLength": 1},
+        "group_id": {"type": "string", "minLength": 1},
+        "split": {"enum": ["train", "validation", "test", "challenge", "ood", "unassigned"]},
+        "capture_metadata": {"type": ["object", "null"]}
+      }
+    },
+    "provenance": {
+      "description": "Proposal lineage. Manual fields must still be present as explicit nulls. original_proposal means geometry originated upstream, not that it is accepted truth.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["proposal_model_id", "proposal_model_revision", "proposal_method", "prompt", "thresholds", "generated_at", "original_proposal", "human_edit_state"],
+      "properties": {
+        "proposal_model_id": {"type": ["string", "null"], "minLength": 1},
+        "proposal_model_revision": {"type": ["string", "null"], "minLength": 1},
+        "proposal_method": {"enum": ["manual", "imported", "model_assisted", "model_silence"]},
+        "prompt": {"type": ["string", "null"], "minLength": 1},
+        "thresholds": {"type": ["object", "null"]},
+        "generated_at": {"type": ["string", "null"], "minLength": 1},
+        "original_proposal": {
+          "description": "Raw immutable model/import output (including an empty array for model silence); null for manual records.",
+          "type": ["object", "array", "null"]
+        },
+        "human_edit_state": {
+          "description": "Record-level summary only. Every object also carries its own human_edit_action.",
+          "enum": ["unreviewed", "accepted_unchanged", "edited", "replaced", "human_only"]
+        }
+      }
+    },
+    "review": {
+      "description": "Human annotation and independent review state. Accepted model-assisted records and verified empties require reviewer_id.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["annotator_id", "annotator_completed_at", "reviewer_id", "reviewed_at", "review_status", "annotation_version", "guide_version"],
+      "properties": {
+        "annotator_id": {"type": ["string", "null"], "minLength": 1},
+        "annotator_completed_at": {"type": ["string", "null"], "minLength": 1},
+        "reviewer_id": {"type": ["string", "null"], "minLength": 1},
+        "reviewed_at": {"type": ["string", "null"], "minLength": 1},
+        "review_status": {"enum": ["unreviewed", "in_review", "changes_requested", "accepted", "adjudicated", "rejected_unusable"]},
+        "annotation_version": {"type": ["string", "null"], "minLength": 1},
+        "guide_version": {"type": ["string", "null"], "minLength": 1}
+      }
+    },
+    "verified_empty": {
+      "description": "True only after full-image human review confirms no weed_target. It does not mean no vegetation.",
+      "type": ["boolean", "null"]
+    },
+    "unusable": {"type": "boolean"},
+    "annotations": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/annotation"}
+    }
+  },
+  "$defs": {
+    "annotation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["annotation_id", "label", "biological_class", "decision_role", "geometry", "attributes"],
+      "properties": {
+        "annotation_id": {"type": "string", "minLength": 1},
+        "label": {"enum": ["rice_protect", "weed_target", "unknown_vegetation", "non_target_aquatic", "ground_exclusion"]},
+        "biological_class": {"enum": ["rice", "weed", "unknown_vegetation", "duckweed_or_aquatic_vegetation", "non_vegetation"]},
+        "decision_role": {"enum": ["protect", "target", "unknown_nonactionable", "exclusion", "ignore_unusable"]},
+        "geometry": {
+          "description": "Image-space coordinates. bbox uses COCO [x,y,width,height]; polygon is a flat coordinate ring; mask RLE size is [height,width].",
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "bbox"],
+              "properties": {
+                "type": {"const": "bbox"},
+                "bbox": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"type": "number"}}
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "polygon"],
+              "properties": {
+                "type": {"const": "polygon"},
+                "polygon": {"type": "array", "minItems": 6, "items": {"type": "number"}}
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "rle"],
+              "properties": {
+                "type": {"enum": ["instance_mask", "semantic_mask"]},
+                "rle": {"$ref": "#/$defs/rle"}
+              }
+            }
+          ]
+        },
+        "attributes": {"$ref": "#/$defs/object_attributes"}
+      }
+    },
+    "object_attributes": {
+      "description": "Required per-object annotation and audit attributes. Unknown biological metadata is explicit null; human_edit_action is null only before human review.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_object_id",
+        "species",
+        "growth_stage",
+        "occlusion",
+        "truncated",
+        "annotation_confidence",
+        "treatment_eligible",
+        "human_edit_action"
+      ],
+      "properties": {
+        "source_object_id": {"type": ["string", "null"], "minLength": 1},
+        "species": {"type": ["string", "null"], "minLength": 1},
+        "growth_stage": {"type": ["string", "null"], "minLength": 1},
+        "occlusion": {"enum": ["none", "partial", "severe", "unknown"]},
+        "truncated": {"type": "boolean"},
+        "annotation_confidence": {"enum": ["certain", "probable", "uncertain"]},
+        "treatment_eligible": {
+          "description": "Classifier/localizer research should normally leave this null. Any non-null accepted decision requires an independent reviewer in the stdlib validator.",
+          "type": ["boolean", "null"]
+        },
+        "human_edit_action": {
+          "description": "Per-object relationship to the immutable source proposal/import. Deleted objects remain audit records and are excluded from canonical accepted truth.",
+          "enum": ["accepted", "edited", "deleted", "added", "reclassified", "split", "merged", null]
+        }
+      }
+    },
+    "rle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["size", "counts"],
+      "properties": {
+        "size": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "integer", "minimum": 1}},
+        "counts": {
+          "oneOf": [
+            {"type": "string", "minLength": 1},
+            {"type": "array", "minItems": 1, "items": {"type": "integer", "minimum": 0}}
+          ]
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "description": "Accepted/adjudicated, non-deleted annotations are canonical truth and must use the geometry allowed for their ontology label. Bboxes remain valid for unreviewed/import/proposal audit records.",
+      "if": {
+        "properties": {
+          "review": {
+            "properties": {"review_status": {"enum": ["accepted", "adjudicated"]}},
+            "required": ["review_status"]
+          }
+        },
+        "required": ["review"]
+      },
+      "then": {
+        "properties": {
+          "annotations": {
+            "items": {
+              "if": {
+                "properties": {
+                  "attributes": {
+                    "properties": {"human_edit_action": {"not": {"const": "deleted"}}},
+                    "required": ["human_edit_action"]
+                  }
+                },
+                "required": ["attributes"]
+              },
+              "then": {
+                "allOf": [
+                  {
+                    "if": {"properties": {"label": {"const": "rice_protect"}}, "required": ["label"]},
+                    "then": {"properties": {"geometry": {"properties": {"type": {"enum": ["instance_mask", "semantic_mask", "polygon"]}}}}}
+                  },
+                  {
+                    "if": {"properties": {"label": {"const": "weed_target"}}, "required": ["label"]},
+                    "then": {"properties": {"geometry": {"properties": {"type": {"enum": ["instance_mask", "polygon"]}}}}}
+                  },
+                  {
+                    "if": {"properties": {"label": {"const": "unknown_vegetation"}}, "required": ["label"]},
+                    "then": {"properties": {"geometry": {"properties": {"type": {"enum": ["instance_mask", "semantic_mask", "polygon"]}}}}}
+                  },
+                  {
+                    "if": {"properties": {"label": {"const": "non_target_aquatic"}}, "required": ["label"]},
+                    "then": {"properties": {"geometry": {"properties": {"type": {"enum": ["semantic_mask", "polygon"]}}}}}
+                  },
+                  {
+                    "if": {"properties": {"label": {"const": "ground_exclusion"}}, "required": ["label"]},
+                    "then": {"properties": {"geometry": {"properties": {"type": {"enum": ["semantic_mask", "polygon"]}}}}}
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "An unusable image cannot be accepted as canonical truth or a verified negative.",
+      "if": {"properties": {"unusable": {"const": true}}, "required": ["unusable"]},
+      "then": {
+        "properties": {
+          "verified_empty": {"const": null},
+          "review": {
+            "properties": {"review_status": {"not": {"enum": ["accepted", "adjudicated"]}}}
+          }
+        }
+      }
+    },
+    {
+      "description": "A rejected-unusable review state is reserved for unusable, unverified images.",
+      "if": {
+        "properties": {
+          "review": {
+            "properties": {"review_status": {"const": "rejected_unusable"}},
+            "required": ["review_status"]
+          }
+        },
+        "required": ["review"]
+      },
+      "then": {
+        "properties": {
+          "unusable": {"const": true},
+          "verified_empty": {"const": null}
+        }
+      }
+    }
+  ]
+}

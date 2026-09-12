@@ -1,0 +1,119 @@
+# Detector training -- PHASE 2, curated RICE dataset (Colab GPU).
+#
+# Differs from detector_gpu.yaml in one material way: this is a TWO-class task.
+# The curated RICE split carries only `rice_protect` (COCO id 1) and
+# `weed_target` (COCO id 2); there is no `non_target_aquatic` in this dataset.
+# num_classes is derived from class_names, so the head is built with 2 outputs.
+#
+# Data: the grouped, leakage-free, filtered split from
+# agrinav_intake_2026-07-21/deliverable/detection/RICE/ (grouped_split.json:
+# capture-series families, 40-frame contiguous blocks, weed-balanced 70/20/10).
+# Do NOT substitute the Roboflow-native split from RICE.coco.zip -- its
+# train/valid/test share video-frame families, so val metrics are inflated.
+#
+# Backbone: pass --riceseg-backbone <path> on the CLI to warm-start from the
+# phase-1 RiceSEG backbone instead of ImageNet. That flag sets
+# pretrained_backbone False for you and keeps BN trainable (the RiceSEG running
+# stats are in-domain). `pretrained_backbone: true` below is the fallback used
+# only when the flag is omitted, so the ImageNet-vs-RiceSEG A/B is one flag.
+#
+# ann_file / images_root come from the CLI (no machine paths in version control):
+#   python -m agrinav.training.weeddet_train \
+#     --ann-file  <drive>/rice_phase2/annotations/instances_train.coco.json \
+#     --images-root /content/rice_curated/images/train \
+#     --config configs/training/detector_rice_phase2.yaml \
+#     --riceseg-backbone <drive>/out/riceseg_backbone.pth \
+#     --checkpoint-dir <drive>/rice_phase2/runs/<timestamp>
+
+device: cuda                # requires a GPU runtime
+seed: 42                    # deterministic RNG seed
+deterministic: false        # allow cudnn autotuning for throughput
+
+# --- model ---
+# num_classes is derived from class_names; do not set it here.
+class_names: [rice_protect, weed_target]  # 2-class: name -> contiguous id order
+anchor_base_scale: 3        # anchor base scale (WeedDet default)
+lsc_k: 7                    # large-separable-conv kernel in the head
+use_atss: true              # ATSS positive/negative anchor assignment
+
+# --- optimisation ---
+pretrained_backbone: true   # fallback only; --riceseg-backbone overrides this
+img_size: 512               # square letterbox input
+batch_size: 8               # fits a T4; raise on an A100 if memory allows
+val_batch_size: 8           # explicit: never disable DataLoader auto-batching
+num_workers: 2              # Colab typically exposes ~2 CPU cores
+base_lr: 0.001              # WeedDet default SGD LR
+momentum: 0.9
+weight_decay: 0.0001
+num_epochs: 18              # exploratory budget; adjust to available time
+# Periodic checkpoint every N epochs. Note 18 % 4 == 2, so this never fires on
+# the final epoch -- which is why four *completed* runs looked like crashes at
+# epoch 16. The trainer now always writes weeddet_last.pth + status.json, so
+# completion is unambiguous regardless of this value; left at 4 to keep the
+# checkpoint cadence comparable with the 2026-07-27/28 runs.
+save_every: 4
+repeat_factor: 1            # 1798 train images is already a real epoch
+min_lr: 0.00001             # cosine floor
+warmup_factor: 0.001        # LR multiplier at warmup start
+# Gradient-norm clip. A backstop against one pathological batch, NOT a step-size
+# control. 100 binds on nothing measured in any regime and still catches a real
+# divergence, which produces norms in the hundreds, not in the tens.
+#
+# Was 0.5, which fired on 100% of steps in every run this project ever recorded.
+# Every unthrottled measurement to date:
+#
+#   regime                                        p50    p90    p99     max
+#   overfit-8,  batch 2, random init, 150 ep     4.436  6.770  40.949  77.745
+#   overfit-16, batch 2, random init, 150 ep     3.804  5.060  23.908  69.106
+#   phase-2 riceseg,  batch 8, warm-start, AMP   5.377  6.872  10.538  13.996
+#   phase-2 imagenet, batch 8, warm-start, AMP   8.207 18.079  32.907  39.667
+#
+# p50 is 3.8-8.2 everywhere; only the tail moves with batch size. At 0.5 that is
+# a 10-16x truncation at the median and up to 80x at the tail.
+#
+# 100 rather than the phase-2 max of 39.7: that value came from 2 epochs, and the
+# real run is 18 with a cosine schedule. A clip sitting on the observed maximum
+# starts binding the moment a later epoch is noisier than the pilot -- silently,
+# and back into the trap this whole exercise came out of. 100 covers the noisier
+# batch-2 regime too, so one number serves the gate and the run.
+#
+# Not the production arm's p99 (10.5) on purpose: that clips ~1% of RiceSEG steps
+# but ~25% of ImageNet steps, making the control's effective step size a function
+# of the clip and reintroducing a confound into the comparison the two-arm pilot
+# exists to make.
+#
+# grad_norm/clipped_fraction is recorded per epoch. If it is ever non-zero, read
+# it before changing anything else.
+grad_clip: 100.0
+
+# --- regularisation / speed ---
+augment: true               # geometric + photometric augmentation (label-aligned)
+use_amp: true               # mixed precision on GPU
+use_ema: true               # track an EMA of weights for the saved checkpoint
+# --- validation / selection ---
+# Pass --val-ann-file and --val-images-root on the CLI to score a held-out split
+# each epoch; the val loss of the EMA weights (the ones actually saved) then
+# selects the best checkpoint. Without them, selection falls back to training
+# loss, which on this recipe moves less between the last five epochs than the
+# augmentation noise on the same quantity -- i.e. it ranks noise.
+#
+# val_ap_interval > 0 upgrades that again: every N epochs the EMA weights are run
+# through the canonical class-aware decode over the whole val split and scored
+# with pycocotools, and COCO AP -- higher is better -- selects `best`. This is
+# the only selection metric that describes detection quality; a detector can
+# lower its loss while its detections get worse. It costs a full decode pass over
+# 518 images, hence the interval rather than every epoch. Requires
+# --val-ann-file/--val-images-root; 0 keeps val-loss selection.
+val_ap_interval: 2
+# 'auto' keeps BN frozen where ImageNet stats exist and trainable for an
+# injected backbone. That coupling makes the ImageNet-vs-RiceSEG A/B a TWO-factor
+# change (backbone weights AND BN trainability). For a single-factor comparison,
+# run the ImageNet arm with --bn-policy trainable.
+bn_policy: auto
+progress_interval: 2.0      # seconds between tqdm redraws (was: every batch)
+ema_decay: 0.999            # EMA decay
+
+# --- outputs ---
+# Prefer an absolute --checkpoint-dir on the CLI (a Drive run dir); this
+# relative fallback keeps the config path-free for version control.
+checkpoint_dir: checkpoints/weeddet_rice_phase2

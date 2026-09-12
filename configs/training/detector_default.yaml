@@ -1,0 +1,44 @@
+# Detector training -- DEFAULT config (CPU-sane, modest).
+#
+# A small but real training run that completes on CPU without a network. Use it
+# to validate the pipeline on a subset before moving to the GPU config. Still
+# exploratory: judge it by loss convergence + qualitative val predictions, not
+# by mAP. ann_file / images_root come from the CLI (no absolute paths here):
+#   python -m agrinav.training.weeddet_train \
+#     --ann-file artifacts/detector_v1/split_v1/train.coco.json \
+#     --images-root /path/to/RiceSEG --config configs/training/detector_default.yaml
+
+device: cpu                 # default to CPU; override with --device cuda if available
+seed: 42                    # deterministic RNG seed
+deterministic: false        # allow cudnn autotuning when on GPU
+
+# --- model ---
+# num_classes is derived from class_names; do not set it here.
+class_names: [rice_protect, weed_target, non_target_aquatic]  # name -> contiguous id order
+anchor_base_scale: 3        # anchor base scale (WeedDet default)
+lsc_k: 7                    # large-separable-conv kernel in the head
+use_atss: true              # ATSS positive/negative anchor assignment
+
+# --- optimisation ---
+pretrained_backbone: false  # offline-safe: no ImageNet fetch (flip on with a GPU/network)
+img_size: 512               # square letterbox input
+batch_size: 4               # modest batch that fits CPU RAM
+num_workers: 2              # a couple of loader workers
+base_lr: 0.001              # WeedDet default SGD LR
+momentum: 0.9
+weight_decay: 0.0001
+num_epochs: 4               # short exploratory run
+save_every: 2               # periodic checkpoint every 2 epochs
+repeat_factor: 1            # no dataset repeat (keeps epochs short)
+min_lr: 0.00001             # cosine floor
+warmup_factor: 0.001        # LR multiplier at warmup start
+grad_clip: 0.5              # gradient-norm clip
+
+# --- regularisation / speed ---
+augment: true               # geometric + photometric augmentation (label-aligned)
+use_amp: false              # AMP is CUDA-only; keep off on CPU
+use_ema: true               # track an EMA of weights for the saved checkpoint
+ema_decay: 0.999            # EMA decay
+
+# --- outputs ---
+checkpoint_dir: checkpoints/weeddet_default  # relative to CWD; gitignored artifact dir

@@ -1,0 +1,47 @@
+# Detector training -- GPU config (Colab T4/A100).
+#
+# The intended first real GPU run. Still exploratory: the deliverable is loss
+# convergence + qualitative val predictions, NOT a mAP number, and the test
+# split stays sealed. Requires CUDA (pretrained_backbone loads ImageNet weights
+# and fails closed without a network). ann_file / images_root come from the CLI:
+#   python -m agrinav.training.weeddet_train \
+#     --ann-file <artifact-dir>/detector_v1/split_v1/train.coco.json \
+#     --images-root /content/riceseg --config configs/training/detector_gpu.yaml \
+#     --checkpoint-dir <artifact-dir>/detector_v1/runs/<timestamp>
+
+device: cuda                # requires a GPU runtime (Runtime -> Change runtime type -> GPU)
+seed: 42                    # deterministic RNG seed
+deterministic: false        # allow cudnn autotuning for throughput
+
+# --- model ---
+# num_classes is derived from class_names; do not set it here.
+class_names: [rice_protect, weed_target, non_target_aquatic]  # name -> contiguous id order
+anchor_base_scale: 3        # anchor base scale (WeedDet default)
+lsc_k: 7                    # large-separable-conv kernel in the head
+use_atss: true              # ATSS positive/negative anchor assignment
+
+# --- optimisation ---
+pretrained_backbone: true   # ImageNet warm-start (needs network; fails closed otherwise)
+img_size: 512               # square letterbox input
+batch_size: 8               # fits a T4; raise on an A100 if memory allows
+num_workers: 2              # Colab typically exposes ~2 CPU cores
+base_lr: 0.001              # WeedDet default SGD LR
+momentum: 0.9
+weight_decay: 0.0001
+num_epochs: 18              # exploratory budget (~12-24); adjust to available time
+save_every: 4               # periodic checkpoint every 4 epochs
+repeat_factor: 2            # 2x dataset repeat per epoch (matches the paper schedule)
+min_lr: 0.00001             # cosine floor
+warmup_factor: 0.001        # LR multiplier at warmup start
+grad_clip: 0.5              # gradient-norm clip
+
+# --- regularisation / speed ---
+augment: true               # geometric + photometric augmentation (label-aligned)
+use_amp: true               # mixed precision on GPU for speed + memory headroom
+use_ema: true               # track an EMA of weights for the saved checkpoint
+ema_decay: 0.999            # EMA decay
+
+# --- outputs ---
+# Prefer an absolute --checkpoint-dir on the CLI (e.g. a Drive run dir); this
+# relative fallback keeps the config path-free for version control.
+checkpoint_dir: checkpoints/weeddet_gpu  # relative to CWD; override on the CLI

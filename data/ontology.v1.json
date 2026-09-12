@@ -1,0 +1,209 @@
+{
+  "schema_version": "1.0.0",
+  "name": "agrinav-perception-ontology",
+  "status": "research-draft",
+  "scope": "image-space plant classification and localization proposals only",
+  "canonical_geometry": "instance_or_semantic_mask",
+  "principles": [
+    "Biological identity and decision role are separate facts.",
+    "A weed target requires affirmative evidence; absence of protected crop is not a target.",
+    "Unknown or ambiguous vegetation is non-actionable.",
+    "Boxes may be derived from masks, but boxes are not canonical treatment geometry.",
+    "Model output is a proposal until a human review state is accepted."
+  ],
+  "biological_classes": [
+    {
+      "id": 1,
+      "name": "rice",
+      "description": "Cultivated rice that must be protected."
+    },
+    {
+      "id": 2,
+      "name": "weed",
+      "description": "A positively identified biological weed; species may be stored as an attribute."
+    },
+    {
+      "id": 3,
+      "name": "unknown_vegetation",
+      "description": "Plant material that cannot be resolved safely as protected rice or a weed target."
+    },
+    {
+      "id": 4,
+      "name": "duckweed_or_aquatic_vegetation",
+      "description": "Aquatic vegetation kept separate until an agronomic policy establishes target status."
+    },
+    {
+      "id": 5,
+      "name": "non_vegetation",
+      "description": "Soil, water, residue, reflection, shadow, equipment, or other background material."
+    }
+  ],
+  "decision_roles": [
+    {
+      "id": 1,
+      "name": "protect"
+    },
+    {
+      "id": 2,
+      "name": "target"
+    },
+    {
+      "id": 3,
+      "name": "unknown_nonactionable"
+    },
+    {
+      "id": 4,
+      "name": "exclusion"
+    },
+    {
+      "id": 5,
+      "name": "ignore_unusable"
+    }
+  ],
+  "canonical_labels": [
+    {
+      "id": 1,
+      "name": "rice_protect",
+      "biological_class": "rice",
+      "decision_role": "protect",
+      "geometry": [
+        "instance_mask",
+        "semantic_mask",
+        "polygon"
+      ],
+      "required": true
+    },
+    {
+      "id": 2,
+      "name": "weed_target",
+      "biological_class": "weed",
+      "decision_role": "target",
+      "geometry": [
+        "instance_mask",
+        "polygon"
+      ],
+      "required": true
+    },
+    {
+      "id": 3,
+      "name": "unknown_vegetation",
+      "biological_class": "unknown_vegetation",
+      "decision_role": "unknown_nonactionable",
+      "geometry": [
+        "instance_mask",
+        "semantic_mask",
+        "polygon"
+      ],
+      "required": true
+    },
+    {
+      "id": 4,
+      "name": "non_target_aquatic",
+      "biological_class": "duckweed_or_aquatic_vegetation",
+      "decision_role": "unknown_nonactionable",
+      "geometry": [
+        "semantic_mask",
+        "polygon"
+      ],
+      "required": false
+    },
+    {
+      "id": 5,
+      "name": "ground_exclusion",
+      "biological_class": "non_vegetation",
+      "decision_role": "exclusion",
+      "geometry": [
+        "semantic_mask",
+        "polygon"
+      ],
+      "required": false
+    }
+  ],
+  "object_attributes": {
+    "species": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    },
+    "growth_stage": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    },
+    "occlusion": {
+      "enum": [
+        "none",
+        "partial",
+        "severe",
+        "unknown"
+      ]
+    },
+    "truncated": {
+      "type": "boolean"
+    },
+    "annotation_confidence": {
+      "enum": [
+        "certain",
+        "probable",
+        "uncertain"
+      ]
+    },
+    "treatment_eligible": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "default": null,
+      "rule": "Must be separately reviewed; never infer it from biological class or from absence of rice."
+    }
+  },
+  "image_attributes": {
+    "verified_empty": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "default": null,
+      "meaning": "A human reviewed the full image and found no weed_target objects. It does not mean the image contains no plants."
+    },
+    "unusable": {
+      "type": "boolean",
+      "default": false
+    },
+    "review_status": {
+      "enum": [
+        "unreviewed",
+        "in_review",
+        "changes_requested",
+        "accepted",
+        "adjudicated",
+        "rejected_unusable"
+      ]
+    }
+  },
+  "proposal_provenance_required": [
+    "proposal_model_id",
+    "proposal_model_revision",
+    "proposal_method",
+    "prompt",
+    "thresholds",
+    "source_image_sha256",
+    "generated_at",
+    "original_proposal",
+    "human_edit_state",
+    "annotator_id",
+    "reviewer_id",
+    "review_status"
+  ],
+  "forbidden_inferences": [
+    "not rice => weed_target",
+    "model returned no boxes => verified_empty",
+    "duckweed_or_aquatic_vegetation => weed_target without an approved policy",
+    "proposal => accepted ground truth",
+    "external non-rice crop => rice_protect"
+  ]
+}

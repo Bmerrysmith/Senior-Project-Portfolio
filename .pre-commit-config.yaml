@@ -1,0 +1,42 @@
+# Pre-commit hooks for AgriNav.
+#   install:  pre-commit install
+#   run all:  pre-commit run --all-files
+#
+# Quarantined/historical trees are excluded so the hooks never rewrite provenance
+# artifacts under _archive/, paper/, or drive_links/. weeddet_v6b.py is held
+# byte-stable pending its Gate-4 rewrite (Black ignores its own extend-exclude
+# when pre-commit passes files explicitly, so it must be excluded here too).
+exclude: |
+  (?x)^(
+    _archive/|
+    paper/|
+    drive_links/|
+    src/agrinav/models/weeddet_v6b\.py
+  )
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+
+  # Ruff owns linting + import sorting; Black owns formatting (ruff's formatter
+  # is intentionally not used, to keep a single canonical formatter).
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 26.3.1
+    hooks:
+      - id: black
