@@ -1,0 +1,67 @@
+# Google Cloud Build pipeline: build the RAG service image, push it to
+# Artifact Registry, and deploy it to Cloud Run.
+#
+# Run manually:
+#   gcloud builds submit --config cloudbuild.yaml
+#
+# Or wire it to a Cloud Build trigger on push to main (see docs/DEPLOY_CLOUD_RUN.md).
+#
+# Override any substitution at submit time, e.g.:
+#   gcloud builds submit --config cloudbuild.yaml --substitutions=_REGION=us-east1
+
+substitutions:
+  _REGION: us-central1
+  _REPO: eaglegis
+  _SERVICE: eaglegis-rag
+  _AR_HOST: us-central1-docker.pkg.dev
+  # Role-tiered LLM services (leave empty to disable that tier).
+  # Small CPU model for routing/grading/contextualization (high concurrency):
+  _UTILITY_OLLAMA_URL: ""
+  _UTILITY_MODEL: qwen3:1.7b
+  # Larger GPU model for final generation:
+  _GENERATION_OLLAMA_URL: ""
+  _GENERATION_MODEL: qwen3:4b
+
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_AR_HOST}/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
+      - -t
+      - ${_AR_HOST}/$PROJECT_ID/${_REPO}/${_SERVICE}:latest
+      - rag_service
+
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - ${_AR_HOST}/$PROJECT_ID/${_REPO}/${_SERVICE}
+
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_AR_HOST}/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --memory=4Gi
+      - --cpu=2
+      - --timeout=300
+      - --concurrency=8
+      - --max-instances=3
+      - --set-env-vars=UTILITY_OLLAMA_URL=${_UTILITY_OLLAMA_URL},UTILITY_MODEL=${_UTILITY_MODEL},GENERATION_OLLAMA_URL=${_GENERATION_OLLAMA_URL},GENERATION_MODEL=${_GENERATION_MODEL}
+
+images:
+  - ${_AR_HOST}/$PROJECT_ID/${_REPO}/${_SERVICE}:$SHORT_SHA
+  - ${_AR_HOST}/$PROJECT_ID/${_REPO}/${_SERVICE}:latest
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8

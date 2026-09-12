@@ -1,0 +1,70 @@
+name: Discover new meetings
+
+# Monthly (and on-demand) discovery of newly-held Village of Estero meetings.
+# Scrapes estero-fl.gov, diffs against bronze, and -- only when there are new
+# candidates -- opens a PR adding app/data/extract/candidate_meetings.csv.
+# The PR is a human merge gate: bronze is NEVER auto-edited.
+
+on:
+  schedule:
+    - cron: "0 8 1 * *"  # 08:00 UTC on the 1st of every month
+  workflow_dispatch:
+
+concurrency:
+  group: discover-meetings
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  discover:
+    name: scrape, diff, open PR if new
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - run: pip install -r requirements.txt
+
+      - name: Discover candidate meetings from estero-fl.gov
+        run: python scripts/scrape_meetings.py
+
+      # Decide whether the candidate file has any data rows (header-only = none).
+      - name: Check for new candidates
+        id: check
+        run: |
+          FILE=app/data/extract/candidate_meetings.csv
+          if [ -f "$FILE" ] && [ "$(tail -n +2 "$FILE" | grep -c . || true)" -gt 0 ]; then
+            COUNT=$(tail -n +2 "$FILE" | grep -c .)
+            echo "has_candidates=true" >> "$GITHUB_OUTPUT"
+            echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+            echo "Found $COUNT new candidate meeting(s)."
+          else
+            echo "has_candidates=false" >> "$GITHUB_OUTPUT"
+            echo "No new candidate meetings; skipping PR."
+          fi
+
+      - name: Open PR with candidate meetings
+        if: steps.check.outputs.has_candidates == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          add-paths: app/data/extract/candidate_meetings.csv
+          branch: data/discover-meetings
+          delete-branch: true
+          commit-message: "data(extract): ${{ steps.check.outputs.count }} new candidate meeting(s) for review"
+          title: "Review: ${{ steps.check.outputs.count }} newly-discovered meeting(s)"
+          body: |
+            Automated discovery found meeting(s) on estero-fl.gov that are **not**
+            yet in bronze (`app/data/meetings.csv` / `app/data/documents.csv`).
+
+            They are staged in `app/data/extract/candidate_meetings.csv` for
+            human review. **Do not** merge blindly: confirm each date/body, then
+            promote the confirmed rows into bronze by hand. Bronze is never
+            auto-edited by this workflow.
+          labels: data, needs-review

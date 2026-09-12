@@ -1,0 +1,72 @@
+name: PZDB Pilot Pipeline
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'data/raw/pzdb/**'
+      - 'normalized_csv/geocoded_locations.csv'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'requirements.txt'
+      - '.github/workflows/pzdb_pilot.yml'
+  workflow_dispatch:
+
+jobs:
+  build-pzdb-pilot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install system OCR dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run parser tests
+        run: python -m unittest tests.test_pipeline_parsers
+
+      - name: Build PZDB pilot CSVs
+        run: |
+          python scripts/build_pilot_board_csvs.py \
+            --from-pdfs \
+            --pdf-dir data/raw/pzdb \
+            --source-csv pdfs/Estero_Meetings_Final.csv \
+            --source-dir normalized_csv \
+            --out-dir normalized_csv_pilot/pzdb_from_raw_verify \
+            --start-date 2022-01-01 \
+            --end-date 2030-12-31 \
+            --filename-token PZDB \
+            --renumber
+
+      - name: Validate PZDB pilot outputs
+        run: |
+          python scripts/validate_pzdb_pilot_outputs.py \
+            --base normalized_csv_pilot/pzdb_from_raw_verify \
+            --pdf-dir data/raw/pzdb \
+            --fail-on-missing-coordinates
+
+      - name: Commit PZDB pilot outputs
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add normalized_csv_pilot/pzdb_from_raw_verify/*.csv normalized_csv_pilot/pzdb_from_raw_verify/*.md
+          git commit -m "auto: update PZDB pilot outputs [skip ci]" || echo "No changes"
+          git push origin main

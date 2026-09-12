@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Estero Public Meetings Map — Village of Estero</title>
+
+  <!-- Leaflet (OpenStreetMap) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <style>
+    /*
+      Elderly-first, accessibility-focused styling.
+      Root font scales via the "Text size" control (data-textscale on <html>).
+    */
+    :root {
+      --font-base: 1.125rem;      /* 18px baseline */
+      --ink: #1a1a1a;             /* near-black body text (WCAG AA on white) */
+      --ink-soft: #333333;        /* still high contrast */
+      --bg: #ffffff;
+      --panel: #f4f6f8;
+      --panel-border: #6b7280;
+      --brand: #0b4f6c;           /* deep teal-blue */
+      --brand-dark: #08384c;
+      --accent: #b3541e;          /* strong orange-brown for roads */
+      --trail: #1b7837;           /* strong green for trails */
+      --point: #0b4f6c;           /* blue for point locations */
+      --focus: #d97706;           /* visible focus ring */
+      --link: #0b4f6c;
+    }
+
+    html { font-size: 100%; }
+    html[data-textscale="large"]  { font-size: 118%; }
+    html[data-textscale="xlarge"] { font-size: 138%; }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Verdana, Arial, sans-serif;
+      font-size: var(--font-base);
+      line-height: 1.55;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    a { color: var(--link); text-decoration: underline; }
+    a:hover { color: var(--brand-dark); }
+
+    /* Visible focus outlines for keyboard navigation */
+    a:focus-visible,
+    button:focus-visible,
+    input:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 4px solid var(--focus);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: var(--brand-dark);
+      color: #fff;
+      padding: 0.75rem 1rem;
+      z-index: 2000;
+    }
+    .skip-link:focus {
+      left: 0.5rem;
+      top: 0.5rem;
+    }
+
+    header.site-header {
+      background: var(--brand);
+      color: #ffffff;
+      padding: 1.25rem 1.5rem;
+    }
+    header.site-header h1 {
+      margin: 0 0 0.4rem 0;
+      font-size: 2rem;
+      line-height: 1.2;
+    }
+    header.site-header p.intro {
+      margin: 0;
+      max-width: 70ch;
+      font-size: 1.1rem;
+      color: #f0f6fa;
+    }
+
+    /* Top control bar */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: flex-end;
+      padding: 1rem 1.5rem;
+      background: var(--panel);
+      border-bottom: 3px solid var(--panel-border);
+    }
+    .control-group { display: flex; flex-direction: column; gap: 0.4rem; }
+    .control-group > label,
+    .control-group > .group-label {
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--ink);
+    }
+
+    select,
+    input[type="search"],
+    input[type="text"] {
+      font-size: 1.1rem;
+      min-height: 48px;
+      padding: 0.5rem 0.75rem;
+      border: 2px solid var(--panel-border);
+      border-radius: 6px;
+      color: var(--ink);
+      background: #fff;
+    }
+    select { min-width: 16rem; }
+    input[type="search"] { min-width: 18rem; width: 100%; }
+
+    /* Big buttons — at least 44px tall, generous padding */
+    button {
+      font-size: 1.05rem;
+      min-height: 48px;
+      padding: 0.5rem 1rem;
+      border: 2px solid var(--brand-dark);
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--brand-dark);
+      cursor: pointer;
+      font-weight: 700;
+    }
+    button:hover { background: #e8eef2; }
+    button[aria-pressed="true"] {
+      background: var(--brand);
+      color: #ffffff;
+    }
+
+    .textsize-buttons { display: flex; gap: 0.4rem; align-items: center; }
+    .textsize-buttons .a1 { font-size: 1rem; }
+    .textsize-buttons .a2 { font-size: 1.2rem; }
+    .textsize-buttons .a3 { font-size: 1.45rem; }
+
+    .home-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 48px;
+      padding: 0.5rem 1rem;
+      border: 2px solid var(--brand-dark);
+      border-radius: 8px;
+      background: #fff;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .home-link:hover { background: #e8eef2; }
+
+    /* Summary stat cards */
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 1rem 1.5rem 0 1.5rem;
+    }
+    .stat-card {
+      flex: 1 1 12rem;
+      background: var(--panel);
+      border: 2px solid var(--panel-border);
+      border-radius: 10px;
+      padding: 0.9rem 1.1rem;
+    }
+    .stat-card .num { font-size: 2rem; font-weight: 800; color: var(--brand); }
+    .stat-card .lbl { font-size: 1.05rem; color: var(--ink); }
+
+    /* Two-pane layout */
+    main.layout {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 1rem;
+      padding: 1rem 1.5rem 2rem 1.5rem;
+      align-items: stretch;
+    }
+    @media (max-width: 900px) {
+      main.layout { grid-template-columns: 1fr; }
+    }
+
+    section.map-pane,
+    section.list-pane {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    h2.pane-title {
+      font-size: 1.5rem;
+      margin: 0 0 0.6rem 0;
+    }
+
+    #map {
+      width: 100%;
+      height: 560px;
+      min-height: 420px;
+      border: 3px solid var(--panel-border);
+      border-radius: 10px;
+    }
+
+    /* Legend */
+    .legend {
+      margin-top: 0.75rem;
+      background: var(--panel);
+      border: 2px solid var(--panel-border);
+      border-radius: 10px;
+      padding: 0.9rem 1.1rem;
+    }
+    .legend h3 { margin: 0 0 0.5rem 0; font-size: 1.2rem; }
+    .legend ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 1rem; }
+    .legend li { display: flex; align-items: center; gap: 0.6rem; font-size: 1.05rem; }
+    .swatch { display: inline-block; border-radius: 3px; flex-shrink: 0; }
+    .swatch.point { width: 20px; height: 20px; background: var(--point); border: 3px solid #fff; box-shadow: 0 0 0 2px var(--point); border-radius: 50%; }
+    .swatch.trail { width: 34px; height: 8px; background: var(--trail); }
+    .swatch.road  { width: 34px; height: 8px; background: var(--accent); }
+
+    /* Meetings list */
+    .list-controls { margin-bottom: 0.75rem; }
+    #meetingCount { font-size: 1.05rem; color: var(--ink-soft); margin: 0.4rem 0 0.75rem 0; }
+
+    ul.meetings { list-style: none; margin: 0; padding: 0; max-height: 620px; overflow-y: auto; }
+    ul.meetings li {
+      border: 2px solid var(--panel-border);
+      border-radius: 10px;
+      padding: 0.9rem 1.1rem;
+      margin-bottom: 0.75rem;
+      background: #fff;
+    }
+    .m-date { font-size: 1.25rem; font-weight: 800; color: var(--ink); }
+    .m-meta { margin: 0.3rem 0; font-size: 1.05rem; color: var(--ink); }
+    .m-meta .label { font-weight: 700; }
+
+    /* Status badge: never color-only — always paired with text */
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.6rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.98rem;
+      border: 2px solid currentColor;
+    }
+    .badge.accepted  { color: #1b5e20; background: #e6f4ea; }
+    .badge.pending   { color: #8a5a00; background: #fdf3e1; }
+    .badge.rejected  { color: #8a1c1c; background: #fbe9e9; }
+    .badge.tabled    { color: #334155; background: #eef2f7; }
+    .badge.cancelled { color: #3b3b3b; background: #ededed; }
+    .badge.finalized-yes { color: #1b5e20; background: #e6f4ea; }
+    .badge.finalized-no { color: #8a5a00; background: #fdf3e1; }
+    .badge.finalized-cancelled { color: #8a1c1c; background: #fbe9e9; }
+    .badge.progress-badge { color: #6d28d9; background: #f5f3ff; }
+
+    .civic-notice {
+      margin: 1rem 0;
+      padding: 1rem 1.1rem;
+      background: #f5f3ff;
+      border: 2px solid #c4b5fd;
+      border-radius: 10px;
+      font-size: 1.05rem;
+      line-height: 1.55;
+    }
+    .civic-notice[hidden] { display: none !important; }
+    .civic-notice-title { font-weight: 800; color: #6d28d9; margin-bottom: 0.5rem; }
+    .civic-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      min-height: 44px; margin-top: 0.5rem; margin-right: 0.5rem;
+      padding: 0.45rem 0.9rem; border-radius: 8px; font-weight: 700; text-decoration: none;
+    }
+    .civic-btn.primary { background: #6d28d9; color: #fff; }
+    .civic-btn.secondary { background: #fff; color: #0b4f6c; border: 2px solid #0b4f6c; }
+
+    .pdf-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      margin-top: 0.5rem;
+      padding: 0.4rem 0.9rem;
+      border: 2px solid var(--brand-dark);
+      border-radius: 8px;
+      background: #fff;
+      font-weight: 700;
+      text-decoration: underline;
+    }
+    .pdf-link:hover { background: #e8eef2; }
+    .no-pdf { margin-top: 0.5rem; color: var(--ink-soft); font-style: italic; font-size: 1rem; }
+
+    .empty-msg {
+      padding: 1rem;
+      background: #fdf3e1;
+      border: 2px solid #8a5a00;
+      border-radius: 10px;
+      color: #5a3a00;
+      font-size: 1.05rem;
+    }
+
+    /* Large, readable Leaflet popups */
+    .leaflet-popup-content { font-size: 1.05rem; line-height: 1.5; color: var(--ink); margin: 0.9rem 1rem; }
+    .leaflet-popup-content h3 { margin: 0 0 0.4rem 0; font-size: 1.25rem; color: var(--brand-dark); }
+    .leaflet-popup-content .row { margin: 0.2rem 0; }
+    .leaflet-popup-content .label { font-weight: 700; }
+
+    footer.site-footer {
+      padding: 1.25rem 1.5rem;
+      background: var(--panel);
+      border-top: 3px solid var(--panel-border);
+      font-size: 1rem;
+      color: var(--ink);
+    }
+
+    .visually-hidden {
+      position: absolute !important;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#meetings-heading">Skip to meetings list</a>
+
+  <header class="site-header">
+    <h1>Estero Public Meetings Map</h1>
+    <p class="intro">
+      This map shows where Village of Estero projects are happening, such as
+      the BERT Rail Trail and Corkscrew Road. Click a marker or a colored line
+      to see project details. The list on the right shows recent public
+      meetings, newest first, with links to the meeting minutes when available.
+    </p>
+  </header>
+
+  <nav class="controls" aria-label="Map and meeting controls">
+    <div class="control-group">
+      <label for="projectFilter">Show a project</label>
+      <select id="projectFilter" aria-label="Filter the map and meetings by project">
+        <option value="">All projects</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <span class="group-label" id="textsize-label">Text size</span>
+      <div class="textsize-buttons" role="group" aria-labelledby="textsize-label">
+        <button type="button" class="a1" id="textNormal" aria-pressed="true" aria-label="Normal text size">A</button>
+        <button type="button" class="a2" id="textLarge" aria-pressed="false" aria-label="Large text size">A+</button>
+        <button type="button" class="a3" id="textXLarge" aria-pressed="false" aria-label="Largest text size">A++</button>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <span class="group-label">Public website</span>
+      <a class="home-link" href="/index.html">Back to main site</a>
+    </div>
+  </nav>
+
+  <section class="stats" aria-label="Project summary" id="statsRow">
+    <div class="stat-card"><div class="num" id="statProjects">—</div><div class="lbl">Projects</div></div>
+    <div class="stat-card"><div class="num" id="statLocations">—</div><div class="lbl">Map locations</div></div>
+    <div class="stat-card"><div class="num" id="statMeetings">—</div><div class="lbl">Meetings on file</div></div>
+    <div class="stat-card"><div class="num" id="statDocs">—</div><div class="lbl">Documents</div></div>
+  </section>
+
+  <main class="layout">
+    <section class="map-pane" aria-label="Project map">
+      <h2 class="pane-title">Map of project locations</h2>
+      <div id="map" role="application" aria-label="Interactive map of Estero project locations"></div>
+
+      <div class="legend" aria-label="Map legend">
+        <h3>What the colors mean</h3>
+        <ul>
+          <li><span class="swatch point" aria-hidden="true"></span> Project location (marker)</li>
+          <li><span class="swatch trail" aria-hidden="true"></span> Trail (green line)</li>
+          <li><span class="swatch road" aria-hidden="true"></span> Road (orange line)</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="list-pane" aria-label="Public meetings">
+      <h2 class="pane-title" id="meetings-heading">Recent public meetings</h2>
+      <div class="list-controls control-group">
+        <label for="meetingSearch">Search meetings (by project, type, date, or status)</label>
+        <input type="search" id="meetingSearch" placeholder="Type to search, for example: Corkscrew" />
+      </div>
+      <div id="pzdbCivicNotice" class="civic-notice" hidden>
+        <div class="civic-notice-title">PZ&amp;DB — project data in progress</div>
+        <p>Planning &amp; Zoning records are still being mapped. Your opinion matters while these projects are underway.</p>
+        <a class="civic-btn primary" href="https://esterotoday.com/contact/" target="_blank" rel="noopener">Share your view with Engage Estero</a>
+        <a class="civic-btn secondary" href="https://estero-fl.gov/ecomment-cards/" target="_blank" rel="noopener">Village eComment</a>
+      </div>
+      <p id="meetingCount" role="status" aria-live="polite">Loading meetings…</p>
+      <ul class="meetings" id="meetingList" aria-labelledby="meetings-heading"></ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>
+      Village of Estero — public meeting records. Map data &copy; OpenStreetMap
+      contributors. Some older meetings may not yet have a linked minutes
+      document.
+    </p>
+  </footer>
+
+  <script>
+    "use strict";
+
+    const API = "/api/v1";
+    const ESTERO_CENTER = [26.438, -81.81];
+    const PZDB_PROJECT_ID = "4";
+
+    // --- State -------------------------------------------------------------
+    let map, pointLayer, roadLayer;
+    let projectsById = {};
+    let typesById = {};
+    let docsByMeeting = {};      // meeting_id -> first document with a file_url
+    let allMeetings = [];        // currently loaded meetings (respecting project filter)
+    let currentProjectId = "";   // "" = all
+
+    // --- Helpers -----------------------------------------------------------
+    function esc(s) {
+      if (s === null || s === undefined) return "";
+      return String(s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    async function getJSON(url) {
+      const res = await fetch(url, { headers: { "Accept": "application/json" } });
+      if (!res.ok) throw new Error(`${url} -> ${res.status}`);
+      return res.json();
+    }
+
+    function badgeClass(status) {
+      const s = (status || "").toLowerCase();
+      if (["accepted", "pending", "rejected", "tabled", "cancelled"].includes(s)) return s;
+      return "tabled";
+    }
+
+    function meetingFinalizedState(meeting, pdfUrl) {
+      const st = (meeting.status || "").toLowerCase();
+      if (st === "cancelled") return "Cancelled";
+      return pdfUrl ? "Yes" : "No";
+    }
+
+    function finalizedLabel(state) {
+      if (state === "Yes") return "Finalized — minutes posted";
+      if (state === "Cancelled") return "Cancelled meeting";
+      return "Not finalized — minutes not posted yet";
+    }
+
+    function finalizedClass(state) {
+      if (state === "Yes") return "finalized-yes";
+      if (state === "Cancelled") return "finalized-cancelled";
+      return "finalized-no";
+    }
+
+    function isPzdbMeeting(meeting) {
+      const typeName = (typesById[meeting.type_id]?.type_name || "").toLowerCase();
+      const projName = (projectsById[meeting.project_id]?.project_name || "").toLowerCase();
+      return typeName.includes("planning zoning") || projName.includes("pz&db") || projName.includes("pzdb");
+    }
+
+    function updatePzdbCivicNotice(rows) {
+      const el = document.getElementById("pzdbCivicNotice");
+      if (!el) return;
+      const show = currentProjectId === PZDB_PROJECT_ID || (rows || []).some(isPzdbMeeting);
+      el.hidden = !show;
+    }
+
+    // --- Map ---------------------------------------------------------------
+    function initMap() {
+      map = L.map("map", { scrollWheelZoom: true }).setView(ESTERO_CENTER, 13);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(map);
+      pointLayer = L.layerGroup().addTo(map);
+      roadLayer = L.layerGroup().addTo(map);
+    }
+
+    function pointPopup(p) {
+      const date = p.latest_meeting_date ? esc(p.latest_meeting_date) : "None on file";
+      const action = p.latest_action_taken ? esc(p.latest_action_taken) : "—";
+      return `
+        <div>
+          <h3>${esc(p.location_name || "Location")}</h3>
+          <div class="row"><span class="label">Project:</span> ${esc(p.project_name || "—")}</div>
+          <div class="row"><span class="label">Status:</span> ${esc(p.project_status || "—")}</div>
+          <div class="row"><span class="label">Meetings:</span> ${esc(p.meeting_count ?? 0)}</div>
+          <div class="row"><span class="label">Latest meeting:</span> ${date}</div>
+          <div class="row"><span class="label">Latest action:</span> ${action}</div>
+        </div>`;
+    }
+
+    async function loadMapLayers(projectId) {
+      pointLayer.clearLayers();
+      roadLayer.clearLayers();
+      const q = projectId ? `?project_id=${encodeURIComponent(projectId)}` : "";
+
+      // Points
+      try {
+        const fc = await getJSON(`${API}/layers/points${q}`);
+        const bounds = [];
+        (fc.features || []).forEach((f) => {
+          const c = f.geometry && f.geometry.coordinates;
+          if (!c) return;
+          const latlng = [c[1], c[0]];
+          bounds.push(latlng);
+          const marker = L.circleMarker(latlng, {
+            radius: 11, color: "#ffffff", weight: 3,
+            fillColor: "#0b4f6c", fillOpacity: 1,
+          });
+          marker.bindPopup(pointPopup(f.properties || {}), { maxWidth: 320 });
+          marker.bindTooltip(esc((f.properties || {}).location_name || ""), { direction: "top" });
+          marker.addTo(pointLayer);
+        });
+        if (bounds.length) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+        else map.setView(ESTERO_CENTER, 13);
+      } catch (e) { console.error("points layer failed", e); }
+
+      // Roads & trails
+      try {
+        const fc = await getJSON(`${API}/layers/roads${q}`);
+        (fc.features || []).forEach((f) => {
+          const props = f.properties || {};
+          const isTrail = (props.location_type || "") === "Trail";
+          const color = isTrail ? "#1b7837" : "#b3541e";
+          const coords = (f.geometry && f.geometry.coordinates) || [];
+          const latlngs = coords.map((c) => [c[1], c[0]]);
+          if (!latlngs.length) return;
+          const line = L.polyline(latlngs, { color, weight: 8, opacity: 0.95 });
+          line.bindPopup(pointPopup(props), { maxWidth: 320 });
+          line.bindTooltip(esc(props.location_name || ""), { sticky: true });
+          line.addTo(roadLayer);
+        });
+      } catch (e) { console.error("roads layer failed", e); }
+    }
+
+    // --- Meetings list -----------------------------------------------------
+    function renderMeetings(filterText) {
+      const list = document.getElementById("meetingList");
+      const countEl = document.getElementById("meetingCount");
+      const q = (filterText || "").trim().toLowerCase();
+
+      const rows = allMeetings.filter((m) => {
+        if (!q) return true;
+        const projName = projectsById[m.project_id]?.project_name || "";
+        const typeName = typesById[m.type_id]?.type_name || "";
+        const hay = [m.meeting_date, m.status, projName, typeName].join(" ").toLowerCase();
+        return hay.includes(q);
+      });
+
+      list.innerHTML = "";
+      if (!rows.length) {
+        list.innerHTML = `<li class="empty-msg">No meetings match your search. Try a different word, or clear the search box.</li>`;
+        countEl.textContent = "0 meetings shown";
+        return;
+      }
+
+      countEl.textContent = `${rows.length} meeting${rows.length === 1 ? "" : "s"} shown`;
+      updatePzdbCivicNotice(rows);
+
+      const frag = document.createDocumentFragment();
+      rows.forEach((m) => {
+        const projName = projectsById[m.project_id]?.project_name || "Unknown project";
+        const typeName = typesById[m.type_id]?.type_name || "Meeting";
+        const doc = docsByMeeting[m.meeting_id];
+        const pdfUrl = doc && doc.file_url ? doc.file_url : null;
+        const fin = meetingFinalizedState(m, pdfUrl);
+        const pzdb = isPzdbMeeting(m);
+
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <div class="m-date">${esc(m.meeting_date || "Date unknown")}</div>
+          <div class="m-meta"><span class="label">Type:</span> ${esc(typeName)}</div>
+          <div class="m-meta"><span class="label">Project:</span> ${esc(projName)}</div>
+          ${pzdb ? `<div class="m-meta" style="color:#6d28d9;font-weight:700;">Project data in progress — your input is welcome</div>` : ""}
+          <div class="m-meta"><span class="label">Minutes:</span>
+            <span class="badge ${finalizedClass(fin)}">${esc(fin === "Yes" && pzdb ? "Minutes posted" : finalizedLabel(fin))}</span>
+            ${pzdb ? `<span class="badge progress-badge">In progress</span>` : ""}</div>
+          <div class="m-meta"><span class="label">Council action:</span>
+            <span class="badge ${badgeClass(m.status)}">${esc(m.status || "Unknown")}</span></div>
+          ${pdfUrl
+            ? `<a class="pdf-link" href="${esc(pdfUrl)}" target="_blank" rel="noopener"
+                 title="Open meeting minutes (opens in a new tab)">Open minutes (PDF)</a>`
+            : `<div class="no-pdf">Official minutes are not posted yet.</div>`}
+          ${pzdb ? `<a class="civic-btn primary" href="https://esterotoday.com/contact/" target="_blank" rel="noopener">Share your opinion with Engage Estero</a>` : ""}
+        `;
+        frag.appendChild(li);
+      });
+      list.appendChild(frag);
+    }
+
+    async function loadMeetings(projectId) {
+      const countEl = document.getElementById("meetingCount");
+      countEl.textContent = "Loading meetings…";
+      const q = projectId ? `?project_id=${encodeURIComponent(projectId)}` : "";
+      try {
+        const data = await getJSON(`${API}/meetings${q}`);
+        data.sort((a, b) => String(b.meeting_date || "").localeCompare(String(a.meeting_date || "")));
+        allMeetings = data;
+        renderMeetings(document.getElementById("meetingSearch").value);
+      } catch (e) {
+        console.error("meetings failed", e);
+        document.getElementById("meetingList").innerHTML =
+          `<li class="empty-msg">Sorry, the meetings could not be loaded right now.</li>`;
+        countEl.textContent = "";
+      }
+    }
+
+    // --- Reference + stats -------------------------------------------------
+    async function loadReference() {
+      const [projects, types, docs] = await Promise.all([
+        getJSON(`${API}/projects`).catch(() => []),
+        getJSON(`${API}/meeting-types`).catch(() => []),
+        getJSON(`${API}/documents`).catch(() => []),
+      ]);
+
+      projects.forEach((p) => { projectsById[p.project_id] = p; });
+      types.forEach((t) => { typesById[t.type_id] = t; });
+      docs.forEach((d) => {
+        if (d.file_url && !docsByMeeting[d.meeting_id]) docsByMeeting[d.meeting_id] = d;
+      });
+
+      // Populate project filter
+      const sel = document.getElementById("projectFilter");
+      projects.forEach((p) => {
+        const opt = document.createElement("option");
+        opt.value = p.project_id;
+        opt.textContent = p.project_name;
+        sel.appendChild(opt);
+      });
+
+      // Stats
+      document.getElementById("statProjects").textContent = projects.length;
+      document.getElementById("statDocs").textContent = docs.length;
+      try {
+        const locs = await getJSON(`${API}/locations`);
+        document.getElementById("statLocations").textContent = locs.length;
+      } catch (_) { document.getElementById("statLocations").textContent = "0"; }
+      try {
+        const allM = await getJSON(`${API}/meetings`);
+        document.getElementById("statMeetings").textContent = allM.length;
+      } catch (_) { document.getElementById("statMeetings").textContent = "0"; }
+    }
+
+    // --- Text size control -------------------------------------------------
+    function setupTextSize() {
+      const btns = {
+        "": document.getElementById("textNormal"),
+        "large": document.getElementById("textLarge"),
+        "xlarge": document.getElementById("textXLarge"),
+      };
+      function apply(scale) {
+        if (scale) document.documentElement.setAttribute("data-textscale", scale);
+        else document.documentElement.removeAttribute("data-textscale");
+        Object.entries(btns).forEach(([k, b]) =>
+          b.setAttribute("aria-pressed", String(k === scale)));
+        if (map) setTimeout(() => map.invalidateSize(), 50);
+      }
+      btns[""].addEventListener("click", () => apply(""));
+      btns["large"].addEventListener("click", () => apply("large"));
+      btns["xlarge"].addEventListener("click", () => apply("xlarge"));
+    }
+
+    // --- Wire up -----------------------------------------------------------
+    function setupControls() {
+      document.getElementById("projectFilter").addEventListener("change", (e) => {
+        currentProjectId = e.target.value;
+        loadMapLayers(currentProjectId);
+        loadMeetings(currentProjectId);
+      });
+      document.getElementById("meetingSearch").addEventListener("input", (e) => {
+        renderMeetings(e.target.value);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      initMap();
+      setupTextSize();
+      setupControls();
+      await loadReference();
+      await loadMapLayers("");
+      await loadMeetings("");
+    });
+  </script>
+</body>
+</html>

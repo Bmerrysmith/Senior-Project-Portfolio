@@ -1,0 +1,52 @@
+# Vector geometries keyed by location_id.
+# - road_geometries: list of [lon, lat] pairs (LineString).
+# - area_geometries: list of polygon rings; each ring is a list of [lon, lat] pairs.
+# Coordinates are WGS-84 (EPSG:4326).
+road_geometries:
+  # BERT Trail centerline: south -> north through Estero
+  1:
+    - [-81.8200, 26.4200]
+    - [-81.8185, 26.4250]
+    - [-81.8170, 26.4300]
+    - [-81.8157, 26.4339]
+    - [-81.8145, 26.4380]
+    - [-81.8130, 26.4420]
+
+  # Corkscrew Road: east-west corridor
+  5:
+    - [-81.8300, 26.4386]
+    - [-81.8200, 26.4386]
+    - [-81.8100, 26.4386]
+    - [-81.8000, 26.4386]
+    - [-81.7900, 26.4386]
+
+# Septic-to-sewer service zones (Infrastructure locations). Each is a single
+# polygon ring of [lon, lat] pairs, first == last (closed), ~150-200 m across,
+# approximated around each location's point in locations.yaml. Within Estero bbox.
+area_geometries:
+  # loc2 — Estero Bay Village Septic Area (centroid -81.8225, 26.4408)
+  2:
+    - - [-81.8237, 26.4400]
+      - [-81.8214, 26.4398]
+      - [-81.8210, 26.4414]
+      - [-81.8225, 26.4422]
+      - [-81.8240, 26.4415]
+      - [-81.8237, 26.4400]
+
+  # loc3 — Sunny Grove Septic Area (centroid -81.8251, 26.4372)
+  3:
+    - - [-81.8264, 26.4364]
+      - [-81.8240, 26.4362]
+      - [-81.8236, 26.4378]
+      - [-81.8252, 26.4385]
+      - [-81.8266, 26.4378]
+      - [-81.8264, 26.4364]
+
+  # loc4 — Cypress Bend Septic Area (centroid -81.8203, 26.4355)
+  4:
+    - - [-81.8216, 26.4347]
+      - [-81.8192, 26.4346]
+      - [-81.8189, 26.4362]
+      - [-81.8204, 26.4368]
+      - [-81.8218, 26.4361]
+      - [-81.8216, 26.4347]

@@ -1,0 +1,67 @@
+name: Drift Watch
+
+# Periodically diffs Supabase against the canonical silver layer in this
+# repo. This is the redundancy check that catches:
+#
+#   - Manual edits made directly in the Supabase dashboard
+#   - Rows that exist in Supabase but are missing from silver (true drift)
+#   - Schema/value mismatches that aren't visible from the bronze CSVs
+#
+# Read-only; never publishes. If drift is found the workflow fails and
+# the operator can compare the run manifest to figure out the cause.
+#
+# Required repo secrets: SUPABASE_URL, SUPABASE_KEY (or SUPABASE_SERVICE_KEY).
+
+on:
+  schedule:
+    # Every 6 hours: 00:00, 06:00, 12:00, 18:00 UTC.
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: drift-watch
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: verify (read-only)
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - run: pip install -r requirements.txt
+
+      - name: Verify Supabase against silver (strict)
+        run: python -m app.pipeline.run --verify --strict
+
+      - name: Upload run manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-manifest-${{ github.run_id }}
+          path: app/data/runs/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Summarize drift in job summary
+        if: always()
+        run: |
+          LATEST=$(ls -td app/data/runs/*/ 2>/dev/null | head -n1)
+          if [ -n "$LATEST" ] && [ -f "$LATEST/manifest.json" ]; then
+            {
+              echo "## Drift Watch — latest manifest"
+              echo ""
+              echo '```json'
+              cat "$LATEST/manifest.json"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi

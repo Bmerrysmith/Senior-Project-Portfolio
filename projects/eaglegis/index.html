@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EagleGIS — Village of Estero Meeting Tracker</title>
+    <!-- DNS/TLS warm-up for third-party assets (fonts, CDNs, map) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="dns-prefetch" href="https://eccl-swfl-safety.maps.arcgis.com">
+    <!-- Critical path: local CSS + site manifest (drives JSON/CSV cache keys) -->
+    <link rel="preload" href="styles.css" as="style">
+    <link rel="preload" href="app/data/gold/site_manifest.json" as="fetch" crossorigin>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Trimmed font weights (drop unused 300) + swap to avoid invisible text -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Icons load async so they don't block first paint -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"></noscript>
+</head>
+<body>
+
+<!-- TOP HEADER -->
+<header id="top-header">
+    <img src="engage-estero-logo.png" alt="Engage Estero" width="120" height="38" fetchpriority="high" decoding="async" style="height:38px;width:auto;background:white;border-radius:6px;padding:4px 8px;" onerror="this.outerHTML='<div style=&quot;background:white;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:800;color:#0052a5;letter-spacing:-0.2px;line-height:1.3;text-align:center;&quot;>ENGAGE<br>ESTERO</div>'">
+    <div class="header-divider"></div>
+    <div class="header-titles">
+        <div class="header-title">EagleGIS &mdash; Meeting Document Tracker</div>
+        <div class="header-sub">Village of Estero, Florida &nbsp;·&nbsp; Municipal Records Database</div>       
+    </div>
+    <a class="header-dashboard-link" href="./dashboard.html" title="Open the accessible dashboard">
+        <i class="fa-solid fa-table-columns"></i> Dashboard
+    </a>
+    <div class="header-badge"><i class="fa-solid fa-database" style="margin-right:5px;"></i>FGCU COP 3710 &middot; Spring 2026</div>
+</header>
+
+<!-- MAIN -->
+<div id="main-layout">
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" aria-label="Meeting search and records">
+
+        <!--
+            View tabs:
+              - Meetings:  static CSV of historical municipal meetings
+              - Upcoming:  live Tribe Events API from estero-fl.gov
+              - News:      live WP REST API from esterotoday.com
+        -->
+        <div class="view-tabs" role="tablist">
+            <button class="view-tab active" data-view="meetings" role="tab" aria-selected="true" id="tab-meetings">
+                <i class="fa-solid fa-gavel"></i> Meetings
+                <span class="tab-badge" id="tab-count-meetings">—</span>
+            </button>
+            <button class="view-tab" data-view="upcoming" role="tab" aria-selected="false" id="tab-upcoming">
+                <i class="fa-regular fa-calendar"></i> Upcoming
+                <span class="tab-badge" id="tab-count-upcoming">—</span>
+            </button>
+            <button class="view-tab" data-view="news" role="tab" aria-selected="false" id="tab-news">
+                <i class="fa-solid fa-newspaper"></i> News
+                <span class="tab-badge" id="tab-count-news">—</span>
+            </button>
+        </div>
+
+        <!-- Search -->
+        <div class="search-section">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                <input type="text" id="main-search" class="search-input" placeholder="Search minutes, projects, locations, titles…" aria-label="Search meetings, news, and upcoming events">
+            </div>
+        </div>
+
+        <!-- News-only category controls -->
+        <div id="news-controls">
+            <div class="filter-label"><i class="fa-solid fa-tag" style="margin-right:4px;"></i>Filter by Topic</div>
+            <div class="news-cat-row" id="news-cat-row">
+                <button class="filter-btn" data-cat="all" style="background:#eff6ff;color:#1d4ed8;border-color:#93c5fd;">
+                    <i class="fa-solid fa-layer-group"></i> All Topics
+                </button>
+            </div>
+            <!-- Engage Estero's four issue pillars (Education, Environment, Health, Safety) -->
+            <div class="filter-label" style="margin-top:10px;"><i class="fa-solid fa-bullseye" style="margin-right:4px;"></i>Engage Estero Pillars</div>
+            <div class="news-pillar-row" id="news-pillar-row"></div>
+        </div>
+
+        <!-- Upcoming-only meeting-type controls (live from Tribe Events API) -->
+        <div id="upcoming-controls">
+            <div class="filter-label"><i class="fa-solid fa-filter" style="margin-right:4px;"></i>Filter by Body</div>
+            <div class="news-cat-row" id="upcoming-cat-row">
+                <button class="filter-btn" data-cat="all" style="background:#eff6ff;color:#1d4ed8;border-color:#93c5fd;">
+                    <i class="fa-solid fa-layer-group"></i> All Bodies
+                </button>
+            </div>
+            <div class="filter-label" style="margin-top:10px;"><i class="fa-regular fa-calendar"></i> Show</div>
+            <div class="news-cat-row" id="upcoming-range-row">
+                <button class="filter-btn upcoming-range" data-range="upcoming" style="background:#eff6ff;color:#1d4ed8;border-color:#93c5fd;">
+                    <i class="fa-solid fa-arrow-right"></i> Upcoming
+                </button>
+                <button class="filter-btn upcoming-range inactive" data-range="past" style="background:#fff7ed;color:#c2410c;border-color:#fdba74;">
+                    <i class="fa-solid fa-arrow-left"></i> Recent Past
+                </button>
+                <button class="filter-btn upcoming-range inactive" data-range="all" style="background:#f5f3ff;color:#6d28d9;border-color:#c4b5fd;">
+                    <i class="fa-solid fa-infinity"></i> All
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-section">
+            <div class="filter-label"><i class="fa-solid fa-filter" style="margin-right:4px;"></i>Filter by Meeting Type</div>
+            <div class="filter-row" id="filter-row">
+                <button class="filter-btn" data-type="all" style="background:#eff6ff;color:#1d4ed8;border-color:#93c5fd;">
+                    <i class="fa-solid fa-layer-group"></i> All
+                </button>
+                <!-- Type buttons populated from CSV data at runtime -->
+            </div>
+            <div class="filter-label" style="margin-top:10px;"><i class="fa-solid fa-map-location-dot" style="margin-right:4px;"></i>Filter by Land Use</div>
+            <div class="filter-row" id="landuse-filter-row">
+                <button class="filter-btn" data-landuse="all" style="background:#eff6ff;color:#1d4ed8;border-color:#93c5fd;">
+                    <i class="fa-solid fa-layer-group"></i> All
+                </button>
+            </div>
+            <div class="filter-label" style="margin-top:10px;"><i class="fa-solid fa-stamp" style="margin-right:4px;"></i>Official minutes posted?</div>
+            <div class="filter-row" id="finalized-filter-row">
+                <button class="filter-btn" data-finalized="all" aria-pressed="true" style="background:#eff6ff;color:#1d4ed8;border-color:#93c5fd;">
+                    <i class="fa-solid fa-layer-group"></i> All
+                </button>
+                <button class="filter-btn inactive" data-finalized="yes" aria-pressed="false" style="background:#f0fdf4;color:#15803d;border-color:#86efac;">
+                    <i class="fa-solid fa-circle-check"></i> Finalized
+                </button>
+                <button class="filter-btn inactive" data-finalized="no" aria-pressed="false" style="background:#fefce8;color:#92400e;border-color:#fde047;">
+                    <i class="fa-solid fa-clock"></i> Not yet
+                </button>
+                <button class="filter-btn inactive" data-finalized="cancelled" aria-pressed="false" style="background:#fef2f2;color:#b91c1c;border-color:#fca5a5;">
+                    <i class="fa-solid fa-ban"></i> Cancelled
+                </button>
+            </div>
+        </div>
+
+        <!-- Year + Sort controls -->
+        <div class="controls-row">
+            <select id="year-filter" class="ctrl-select" aria-label="Filter meetings by year">
+                <option value="all">All Years</option>
+            </select>
+            <select id="sort-select" class="ctrl-select" aria-label="Sort meetings">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="type">By Meeting Type</option>
+            </select>
+            <button onclick="document.getElementById('about-panel').classList.toggle('open')"
+                aria-expanded="false" aria-controls="about-panel"
+                style="padding:5px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--surface);color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:4px;">
+                <i class="fa-solid fa-circle-info"></i>About
+            </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-section" aria-live="polite">
+            <div class="stat-box"><div class="stat-num" id="s-count">—</div><div class="stat-lbl"><i class="fa-solid fa-file-lines"></i> Agenda Items</div></div>
+            <div class="stat-box"><div class="stat-num" id="s-years">—</div><div class="stat-lbl"><i class="fa-regular fa-calendar"></i> Years</div></div>
+            <div class="stat-box"><div class="stat-num" id="s-types">—</div><div class="stat-lbl"><i class="fa-solid fa-tags"></i> Land Uses</div></div>
+            <div class="stat-box"><div class="stat-num" id="s-pdfs">—</div><div class="stat-lbl"><i class="fa-solid fa-file-pdf"></i> PDFs</div></div>
+        </div>
+
+        <!-- Reports & Documents (Engage Estero) — News tab only -->
+        <div id="reports-panel" style="display:none;margin:8px 12px 0;" role="region" aria-labelledby="reports-title">
+            <div class="reports-head" role="button" tabindex="0" aria-expanded="false" aria-controls="reports-body">
+                <div class="reports-title" id="reports-title">
+                    <i class="fa-solid fa-book-bookmark"></i>Reports & Governing Docs
+                </div>
+                <i class="fa-solid fa-chevron-right reports-chevron" aria-hidden="true"></i>
+            </div>
+            <div class="reports-body" id="reports-body">
+                <div class="reports-strip" id="reports-strip"></div>
+                <div id="reports-governing"></div>
+            </div>
+        </div>
+
+        <!-- PZ&DB civic-participation notice (shown when in-progress projects exist) -->
+        <div id="pzdb-civic-notice" class="civic-notice" hidden>
+            <div class="civic-notice-title"><i class="fa-solid fa-hard-hat"></i> PZ&amp;DB projects — still being mapped</div>
+            <p>
+                Planning &amp; Zoning (PZ&amp;DB) project details in EagleGIS are <strong>not finished yet</strong>.
+                Minutes may be posted, but individual projects and locations are still being added.
+                <strong>Your opinion still matters</strong> — you can speak up while these projects are underway.
+            </p>
+            <div class="civic-btns">
+                <a class="civic-btn primary" href="https://esterotoday.com/contact/" target="_blank" rel="noopener">
+                    <i class="fa-solid fa-comments"></i> Share your view with Engage Estero
+                </a>
+                <a class="civic-btn secondary" href="https://estero-fl.gov/ecomment-cards/" target="_blank" rel="noopener">
+                    <i class="fa-solid fa-envelope-open-text"></i> Official Village comment (eComment)
+                </a>
+            </div>
+        </div>
+
+        <!-- List -->
+        <div id="data-list" role="region" aria-label="Records list">
+            <div class="empty"><i class="fa-solid fa-spinner fa-spin"></i><p>Loading records...</p></div>       
+        </div>
+
+        <!-- Footer -->
+        <footer class="sidebar-footer">
+            <span class="footer-text">Supabase · ArcGIS · <a href="https://esterotoday.com/" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">EsteroToday</a></span>
+            <a href="https://github.com/EagleGIS-FGCU/EagleGIS" target="_blank" class="footer-link">
+                <i class="fa-brands fa-github"></i> Source
+            </a>
+        </footer>
+    </aside>
+
+    <!-- DETAIL PANEL -->
+    <section id="detail-panel" aria-labelledby="detail-header-title" role="dialog" aria-modal="false">
+        <div class="detail-header">
+            <div class="detail-header-left">
+                <div class="detail-header-icon" id="detail-header-icon"><i class="fa-solid fa-file-lines"></i></div>
+                <div>
+                    <div class="detail-header-title" id="detail-header-title">Agenda Item Detail</div>
+                    <div class="detail-header-sub" id="detail-header-sub">Village of Estero Municipal Record</div>
+                </div>
+            </div>
+            <div class="close-btn" id="close-detail" role="button" tabindex="0" aria-label="Close details"><i class="fa-solid fa-xmark"></i></div>
+        </div>
+        <div id="detail-content"></div>
+    </section>
+
+    <!-- MAP — the embedded ArcGIS map. -->
+    <main id="map-spot">
+        <!-- Map src is injected after first paint so the sidebar + data load aren't competing with ArcGIS -->  
+        <iframe id="map-iframe" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" title="Engage Estero Community Map"
+            data-src="https://eccl-swfl-safety.maps.arcgis.com/apps/instant/basic/index.html?appid=0a9cfa7faa4f4a7d8964c6fa90ecada4"
+            src="about:blank"
+            allow="geolocation"
+            loading="lazy"
+            style="width:100%;height:100%;border:none;display:block;">
+        </iframe>
+    </main>
+
+    <!-- Back to top -->
+    <button id="back-top" title="Back to top" aria-label="Back to top"><i class="fa-solid fa-chevron-up"></i></button>
+
+    <!-- About Panel -->
+    <div id="about-panel" role="region" aria-labelledby="about-title">
+        <div class="about-title" id="about-title"><i class="fa-solid fa-circle-info"></i>About EagleGIS</div>
+        <div class="about-text">
+            EagleGIS is a municipal meeting document tracker built for the Village of Estero, Florida.
+            It provides searchable access to Village Council and Planning, Zoning &amp; Design Board
+            meeting minutes from 2015–2026, organized by <strong>meeting type</strong>:
+            Regular Council Meeting, Council Workshop, Special Called, Joint, Public Hearing,
+            Quasi-judicial Hearing, and the PZDB sub-types.<br><br>
+            Each record retains its location and lat/long for ArcGIS integration.<br><br>
+            The <strong>Community News</strong> tab pulls live articles from
+            <a href="https://esterotoday.com/" target="_blank" style="color:var(--accent);">EsteroToday.com</a>,
+            our community partner's news site covering Estero growth, transportation, safety,
+            environment, and development.<br><br>
+            Built by <strong>FGCU Team 4</strong> as part of COP 3710 Database Systems, Spring 2026.
+            Community partner: <strong>Engage Estero</strong>.
+        </div>
+        <span class="about-close" role="button" tabindex="0" onclick="document.getElementById('about-panel').classList.remove('open')">Close</span>
+    </div>
+
+</div><!-- end main-layout -->
+
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/minisearch@7.1.0/dist/umd/index.js" crossorigin="anonymous"></script>
+<script defer src="app.js"></script>
+</body>
+</html>

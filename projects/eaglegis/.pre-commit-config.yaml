@@ -1,0 +1,57 @@
+# Local automation: runs before every `git commit`.
+#
+# Install once with:
+#   pip install pre-commit && pre-commit install
+#
+# After install, the hooks run automatically on staged files. The big
+# one is `rebuild-silver` — if you edit a bronze CSV or reference YAML
+# and forget to rebuild silver, the hook does it for you and stages the
+# regenerated outputs into your commit.
+
+repos:
+  # Standard hygiene hooks (white-space, EOF newlines, large files, etc.)
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^app/data/silver/
+      - id: end-of-file-fixer
+        exclude: ^app/data/silver/
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=2048"]
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+
+  # Project-specific hook: rebuild silver when bronze/reference changes.
+  - repo: local
+    hooks:
+      - id: rebuild-silver
+        name: Rebuild silver layer when bronze or reference changes
+        entry: python -m app.pipeline.run --strict
+        language: system
+        pass_filenames: false
+        files: |
+          (?x)^(
+              app/data/(meetings|documents)\.csv|
+              app/data/reference/.*\.yaml|
+              app/pipeline/.*\.py
+          )$
+        # Stage regenerated silver/* outputs so the user's commit contains
+        # them (otherwise CI's "silver up to date" guard would fail).
+        stages: [pre-commit]
+
+      - id: stage-silver
+        name: Stage rebuilt silver outputs
+        entry: bash -c 'git add app/data/silver/'
+        language: system
+        pass_filenames: false
+        files: |
+          (?x)^(
+              app/data/(meetings|documents)\.csv|
+              app/data/reference/.*\.yaml|
+              app/pipeline/.*\.py
+          )$
+        stages: [pre-commit]

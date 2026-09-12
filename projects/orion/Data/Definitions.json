@@ -1,0 +1,67 @@
+{
+  "AUM": {
+    "name": "Assets Under Management",
+    "definition": "The total market value of the assets a fund or firm manages on behalf of investors.",
+    "importance": "A higher AUM often indicates investor trust, fund stability, and operational scalability. It can also impact liquidity and management efficiency."
+  },
+  "Sharpe Ratio": {
+    "name": "Sharpe Ratio",
+    "definition": "A measure of risk-adjusted return that indicates how much excess return you receive for the extra volatility you endure for holding a riskier asset.",
+    "importance": "Helps compare the performance of funds relative to their risk. A higher Sharpe ratio means better risk-adjusted returns."
+  },
+  "Sortino Ratio": {
+    "name": "Sortino Ratio",
+    "definition": "A variation of the Sharpe ratio that only considers downside volatility, not total volatility.",
+    "importance": "Gives a clearer picture of risk-adjusted performance by penalizing only negative volatility. Ideal for evaluating downside risk."
+  },
+  "Treynor Ratio": {
+    "name": "Treynor Ratio",
+    "definition": "Measures returns earned in excess of the risk-free rate per unit of market risk (beta).",
+    "importance": "Useful for evaluating how well a fund compensates investors for taking on market risk specifically."
+  },
+  "Standard Deviation": {
+    "name": "Standard Deviation",
+    "definition": "A statistical measure of the dispersion of returns around the mean return.",
+    "importance": "Indicates total risk or volatility of a fund. A higher value means more unpredictable returns."
+  },
+  "Max Drawdown": {
+    "name": "Maximum Drawdown",
+    "definition": "The largest observed loss from a peak to a trough before a new peak is attained.",
+    "importance": "Helps assess how bad losses can get in a worst-case scenario. Important for risk-averse investors."
+  },
+  "Mean Annual Return": {
+    "name": "Mean Annual Return",
+    "definition": "The average yearly return of a fund over a specific time period.",
+    "importance": "Used to evaluate overall growth potential. It does not account for volatility or risk."
+  },
+  "Expense Ratio": {
+    "name": "Expense Ratio",
+    "definition": "The percentage of a funds assets used to cover administrative and operational expenses.",
+    "importance": "Lower expense ratios lead to better net returns for investors over time. Crucial in passive/index investing."
+  },
+  "# of Years Up": {
+    "name": "Number of Years with Positive Returns",
+    "definition": "The number of years in which the fund delivered positive annual returns.",
+    "importance": "Highlights consistency in performance and ability to navigate various market conditions."
+  },
+  "# of Years Down": {
+    "name": "Number of Years with Negative Returns",
+    "definition": "The number of years in which the fund had negative annual returns.",
+    "importance": "Reveals risk in market downturns and helps investors judge downside resilience."
+  },
+  "R-squared": {
+    "name": "R-squared",
+    "definition": "Indicates the percentage of a fund's movements that can be explained by movements in a benchmark index.",
+    "importance": "Higher R-squared (close to 100%) means the fund closely follows the benchmark. Low R-squared implies poor benchmark tracking."
+  },
+  "Alpha": {
+    "name": "Alpha",
+    "definition": "Measures a fund's performance compared to a market index or benchmark, adjusted for risk.",
+    "importance": "Positive alpha indicates the fund outperformed its benchmark after adjusting for risk. Negative alpha means underperformance."
+  },
+  "Beta": {
+    "name": "Beta",
+    "definition": "A measure of a funds sensitivity to market movements.",
+    "importance": "A beta greater than 1 means the fund is more volatile than the market. Less than 1 means lower volatility."
+  }
+}

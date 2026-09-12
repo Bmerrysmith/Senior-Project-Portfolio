@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EagleGIS Dashboard — Village of Estero</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface2: #f8fafc;
+      --border: #e2e8f0;
+      --border2: #cbd5e1;
+      --text: #0f172a;
+      --muted: #334155;
+      --subtle: #64748b;
+      --accent: #0052a5;
+      --accent-light: #e8f0fb;
+      --accent-border: #b3ccf0;
+      --trail: #15803d;
+      --road: #c2410c;
+      --area: #6d28d9;
+      --header-h: 64px;
+      --sidebar-w: 430px;
+      --font-base: 1.06rem;
+    }
+
+    html { font-size: 100%; }
+    html[data-textscale="large"] { font-size: 118%; }
+    html[data-textscale="xlarge"] { font-size: 136%; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-size: var(--font-base);
+      line-height: 1.5;
+    }
+    a { color: var(--accent); }
+    a:focus-visible,
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible {
+      outline: 3px solid #f59e0b;
+      outline-offset: 2px;
+      border-radius: 8px;
+    }
+
+    #top-header {
+      height: var(--header-h);
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      flex-shrink: 0;
+    }
+    #top-header img {
+      height: 40px;
+      width: auto;
+      border-radius: 4px;
+      background: white;
+      padding: 3px;
+    }
+    .header-divider { width: 1px; height: 32px; background: rgba(255,255,255,0.25); }
+    .header-titles { flex: 1; }
+    .header-title {
+      font-size: 1.02rem;
+      font-weight: 700;
+      color: white;
+      letter-spacing: -0.2px;
+      line-height: 1.2;
+    }
+    .header-sub {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.7);
+      font-weight: 500;
+      letter-spacing: 0.03em;
+    }
+    .header-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 44px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.35);
+      background: #fff;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+    .header-badge {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: white;
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    #main-layout {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+    #sidebar {
+      width: var(--sidebar-w);
+      min-width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      z-index: 10;
+    }
+    @media (max-width: 1080px) {
+      #main-layout { flex-direction: column; }
+      #sidebar {
+        width: 100%;
+        min-width: 100%;
+        height: 56%;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+    }
+
+    .section {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    .section h2 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .control-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      color: var(--subtle);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .ctrl {
+      width: 100%;
+      min-height: 44px;
+      padding: 8px 10px;
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      background: white;
+      color: var(--text);
+      font-size: 0.93rem;
+      font-family: "Inter", sans-serif;
+    }
+    .textsize-row { display: flex; gap: 8px; margin-top: 10px; }
+    .text-btn {
+      min-height: 44px;
+      min-width: 54px;
+      border-radius: 8px;
+      border: 1px solid var(--border2);
+      background: white;
+      color: var(--muted);
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .text-btn[aria-pressed="true"] {
+      background: var(--accent-light);
+      color: var(--accent);
+      border-color: var(--accent-border);
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .stat-box {
+      background: white;
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .stat-num {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1.1;
+    }
+    .stat-lbl {
+      margin-top: 3px;
+      color: var(--subtle);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 700;
+    }
+
+    .detail-wrap {
+      padding: 12px;
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      background: #fff;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .detail-empty {
+      color: var(--subtle);
+      font-size: 0.9rem;
+    }
+    .detail-title {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .detail-row { margin-bottom: 5px; font-size: 0.9rem; color: var(--muted); }
+    .detail-row strong { color: var(--text); }
+    .detail-subhead {
+      margin: 10px 0 6px;
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      color: var(--subtle);
+    }
+    .detail-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .detail-list li {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      background: #fafcff;
+      font-size: 0.86rem;
+    }
+    .detail-minutes {
+      margin-top: 5px;
+      display: inline-block;
+      min-height: 36px;
+      padding: 6px 10px;
+      border-radius: 7px;
+      border: 1px solid var(--accent-border);
+      background: var(--accent-light);
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.82rem;
+    }
+
+    .meeting-count {
+      margin: 8px 0;
+      color: var(--subtle);
+      font-size: 0.85rem;
+    }
+    #meeting-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 44vh;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .meeting-item {
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      background: white;
+      padding: 10px;
+    }
+    .meeting-date {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .meeting-meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+    .badge {
+      display: inline-block;
+      margin-top: 5px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      border: 1px solid currentColor;
+    }
+    .accepted { color: #166534; background: #e7f7ea; }
+    .pending { color: #92400e; background: #fff7e7; }
+    .rejected { color: #991b1b; background: #fdecec; }
+    .tabled { color: #334155; background: #eef2f7; }
+    .cancelled { color: #374151; background: #f3f4f6; }
+    .finalized-yes { color: #166534; background: #e7f7ea; }
+    .finalized-no { color: #92400e; background: #fff7e7; }
+    .finalized-cancelled { color: #991b1b; background: #fdecec; }
+    .progress-badge { color: #6d28d9; background: #f5f3ff; }
+    .civic-notice {
+      margin-bottom: 12px;
+      padding: 14px;
+      background: #f5f3ff;
+      border: 2px solid #c4b5fd;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      line-height: 1.55;
+      color: var(--text);
+    }
+    .civic-notice[hidden] { display: none !important; }
+    .civic-notice-title {
+      font-weight: 800; color: #6d28d9; margin-bottom: 8px; font-size: 0.95rem;
+    }
+    .civic-notice p { color: var(--muted); margin: 0 0 10px; }
+    .civic-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 44px; margin-top: 8px; padding: 10px 12px; border-radius: 8px;
+      font-size: 0.85rem; font-weight: 700; text-decoration: none; text-align: center;
+    }
+    .civic-btn.primary { background: #6d28d9; color: #fff; }
+    .civic-btn.secondary { background: #fff; color: #0052a5; border: 2px solid #93c5fd; }
+    .meeting-link {
+      display: inline-block;
+      margin-top: 7px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .header-admin-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 44px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.35);
+      background: rgba(255,255,255,0.12);
+      color: white;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: "Inter", sans-serif;
+    }
+    .header-admin-btn.active {
+      background: #fef3c7;
+      color: #92400e;
+      border-color: #fcd34d;
+    }
+    .admin-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 5000;
+      padding: 16px;
+    }
+    .admin-modal-backdrop.open { display: flex; }
+    .admin-modal {
+      width: min(420px, 100%);
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+    }
+    .admin-modal h3 {
+      margin-bottom: 8px;
+      font-size: 1.05rem;
+      color: var(--text);
+    }
+    .admin-modal p {
+      margin-bottom: 14px;
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .admin-modal-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    .admin-modal-actions button {
+      min-height: 44px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border2);
+      background: white;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: "Inter", sans-serif;
+    }
+    .admin-modal-actions .primary {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    .admin-notes-section {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 10px;
+      border: 2px dashed #f59e0b;
+      background: #fffbeb;
+    }
+    .admin-notes-section .detail-subhead {
+      color: #92400e;
+      margin-bottom: 8px;
+    }
+    .admin-comment-input {
+      width: 100%;
+      min-height: 96px;
+      padding: 10px;
+      border: 1px solid #fcd34d;
+      border-radius: 8px;
+      font-family: "Inter", sans-serif;
+      font-size: 0.9rem;
+      resize: vertical;
+      background: white;
+      color: var(--text);
+    }
+    .admin-comment-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .admin-save-btn {
+      min-height: 40px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: none;
+      background: #92400e;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: "Inter", sans-serif;
+    }
+    .admin-save-status {
+      font-size: 0.8rem;
+      color: var(--subtle);
+    }
+    .admin-pin-hint {
+      font-size: 0.78rem;
+      color: #92400e;
+      margin-top: 6px;
+    }
+
+    #map-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background: var(--bg);
+      position: relative;
+    }
+    #map {
+      width: 100%;
+      height: calc(100vh - var(--header-h));
+      min-height: 380px;
+    }
+    .legend {
+      position: absolute;
+      right: 14px;
+      bottom: 14px;
+      z-index: 700;
+      background: rgba(255,255,255,0.95);
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      padding: 10px;
+      min-width: 180px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    }
+    .legend h3 {
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--subtle);
+      margin-bottom: 8px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .swatch { display: inline-block; flex-shrink: 0; }
+    .swatch.point {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid white;
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+    .swatch.trail { width: 24px; height: 6px; border-radius: 6px; background: var(--trail); }
+    .swatch.road { width: 24px; height: 6px; border-radius: 6px; background: var(--road); }
+    .swatch.area { width: 24px; height: 6px; border-radius: 6px; background: var(--area); }
+  </style>
+</head>
+<body>
+  <header id="top-header">
+    <img src="engage-estero-logo.png" alt="Engage Estero" onerror="this.outerHTML='<div style=&quot;background:white;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:800;color:#0052a5;letter-spacing:-0.2px;line-height:1.3;text-align:center;&quot;>ENGAGE<br>ESTERO</div>'">
+    <div class="header-divider"></div>
+    <div class="header-titles">
+      <div class="header-title">EagleGIS — Public Meetings Dashboard</div>
+      <div class="header-sub">Village of Estero, Florida · Static GitHub Pages version</div>
+    </div>
+    <a class="header-link" href="./index.html"><i class="fa-solid fa-house"></i> Main Site</a>
+    <button type="button" class="header-admin-btn" id="admin-toggle" title="Admin-only pin notes">
+      <i class="fa-solid fa-lock"></i> Admin
+    </button>
+    <div class="header-badge">FGCU COP 3710 · Spring 2026</div>
+  </header>
+
+  <div class="admin-modal-backdrop" id="admin-modal" hidden>
+    <div class="admin-modal" role="dialog" aria-labelledby="admin-modal-title" aria-modal="true">
+      <h3 id="admin-modal-title"><i class="fa-solid fa-lock"></i> Admin access</h3>
+      <p>Internal notes on map pins are visible only in admin mode. Enter the admin key from your team lead, or use browser-only notes on the static site.</p>
+      <label class="control-label" for="admin-key-input">Admin key</label>
+      <input id="admin-key-input" class="ctrl" type="password" autocomplete="off" placeholder="EAGLE_ADMIN_KEY value">
+      <div class="admin-modal-actions">
+        <button type="button" class="primary" id="admin-unlock-api">Unlock (server)</button>
+        <button type="button" id="admin-unlock-local">Browser-only notes</button>
+        <button type="button" id="admin-modal-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="main-layout">
+    <aside id="sidebar">
+      <section class="section">
+        <h2><i class="fa-solid fa-sliders"></i> Filters</h2>
+        <label class="control-label" for="project-filter">Project</label>
+        <select id="project-filter" class="ctrl">
+          <option value="">All projects</option>
+        </select>
+        <label class="control-label" for="meeting-search" style="margin-top:10px;">Search meetings</label>
+        <input id="meeting-search" class="ctrl" type="search" placeholder="Type project, type, date, status...">
+        <div id="pzdb-civic-notice" class="civic-notice" hidden>
+          <div class="civic-notice-title"><i class="fa-solid fa-hard-hat"></i> PZ&amp;DB — project data in progress</div>
+          <p>
+            Planning &amp; Zoning records are still being mapped in EagleGIS.
+            <strong>Your opinion matters</strong> while these projects are underway.
+          </p>
+          <a class="civic-btn primary" href="https://esterotoday.com/contact/" target="_blank" rel="noopener">
+            <i class="fa-solid fa-comments"></i> Share your view with Engage Estero
+          </a>
+          <a class="civic-btn secondary" href="https://estero-fl.gov/ecomment-cards/" target="_blank" rel="noopener">
+            <i class="fa-solid fa-envelope-open-text"></i> Village eComment (official)
+          </a>
+        </div>
+        <div class="textsize-row" role="group" aria-label="Text size">
+          <button class="text-btn" id="text-normal" aria-pressed="true">A</button>
+          <button class="text-btn" id="text-large" aria-pressed="false">A+</button>
+          <button class="text-btn" id="text-xlarge" aria-pressed="false">A++</button>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2><i class="fa-solid fa-chart-simple"></i> Snapshot</h2>
+        <div class="stats-row">
+          <div class="stat-box"><div class="stat-num" id="stat-projects">—</div><div class="stat-lbl">Projects</div></div>
+          <div class="stat-box"><div class="stat-num" id="stat-locations">—</div><div class="stat-lbl">Locations</div></div>
+          <div class="stat-box"><div class="stat-num" id="stat-meetings">—</div><div class="stat-lbl">Meetings</div></div>
+          <div class="stat-box"><div class="stat-num" id="stat-minutes">—</div><div class="stat-lbl">With Minutes</div></div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2><i class="fa-solid fa-circle-info"></i> Selected Location Details</h2>
+        <div id="detail-panel" class="detail-wrap">
+          <div class="detail-empty">Click any map point, road, or area to open details here.</div>
+        </div>
+      </section>
+
+      <section class="section" style="flex:1; min-height:0;">
+        <h2><i class="fa-solid fa-calendar-days"></i> Meeting Feed</h2>
+        <div id="meeting-count" class="meeting-count">Loading…</div>
+        <ul id="meeting-list"></ul>
+      </section>
+    </aside>
+
+    <main id="map-wrap">
+      <div id="map"></div>
+      <div class="legend" aria-label="Map legend">
+        <h3>Legend</h3>
+        <div class="legend-item"><span class="swatch point"></span> Project location</div>
+        <div class="legend-item"><span class="swatch trail"></span> Trail corridor</div>
+        <div class="legend-item"><span class="swatch road"></span> Road corridor</div>
+        <div class="legend-item"><span class="swatch area"></span> Service area polygon</div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    "use strict";
+
+    const ESTERO_CENTER = [26.438, -81.81];
+    const PZDB_PROJECT_ID = "4";
+    const CIVIC_LINKS = {
+      engageContact: "https://esterotoday.com/contact/",
+      villageEComment: "https://estero-fl.gov/ecomment-cards/",
+      villageParticipate: "https://estero-fl.gov/how-do-i-participate-menu/"
+    };
+    const FILES = {
+      meetingsGold: "./app/data/gold/arcgis_agenda_map_data.csv",
+      projectsYaml: "./app/data/reference/projects.yaml",
+      locationsYaml: "./app/data/reference/locations.yaml",
+      geomsYaml: "./app/data/reference/geometries.yaml"
+    };
+    const API_BASE = "";
+    const ADMIN_SESSION_KEY = "eaglegis_admin_key";
+    const ADMIN_LOCAL_MODE_KEY = "eaglegis_admin_local";
+    const ADMIN_LOCAL_COMMENTS_KEY = "eaglegis_pin_comments_local";
+
+    let map, pointLayer, roadLayer, areaLayer;
+    let meetings = [];
+    let projects = [];
+    let locations = [];
+    let geoms = { road_geometries: {}, area_geometries: {} };
+    let currentProjectId = "";
+    let adminMode = false;
+    let adminLocalOnly = false;
+    let pinComments = {};
+    let selectedLocation = null;
+
+    function esc(s) {
+      if (s === null || s === undefined) return "";
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function parseCSV(text) {
+      const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+      return parsed.data || [];
+    }
+
+    async function fetchText(url) {
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error(`${url} -> ${res.status}`);
+      return res.text();
+    }
+
+    async function loadData() {
+      const [meetingsCsv, projectsYaml, locationsYaml, geomsYaml] = await Promise.all([
+        fetchText(FILES.meetingsGold),
+        fetchText(FILES.projectsYaml),
+        fetchText(FILES.locationsYaml),
+        fetchText(FILES.geomsYaml)
+      ]);
+      meetings = parseCSV(meetingsCsv).sort((a, b) =>
+        String(b.MeetingDate || "").localeCompare(String(a.MeetingDate || ""))
+      );
+      projects = jsyaml.load(projectsYaml) || [];
+      locations = jsyaml.load(locationsYaml) || [];
+      geoms = jsyaml.load(geomsYaml) || { road_geometries: {}, area_geometries: {} };
+    }
+
+    function projectById(id) {
+      return projects.find((p) => String(p.project_id) === String(id)) || null;
+    }
+
+    function meetingsForProject(projectName) {
+      return meetings.filter((m) => m.ProjectName === projectName);
+    }
+
+    function renderDetailPanel(loc) {
+      selectedLocation = loc || null;
+      const panel = document.getElementById("detail-panel");
+      if (!loc) {
+        panel.innerHTML = '<div class="detail-empty">Click any map point, road, or area to open details here.</div>';
+        return;
+      }
+      const proj = projectById(loc.project_id);
+      const projectName = proj ? proj.project_name : "Unknown project";
+      const projectMeetings = meetingsForProject(projectName).slice(0, 24);
+
+      let meetingsHtml = '<li>No meetings available for this project.</li>';
+      if (projectMeetings.length) {
+        meetingsHtml = projectMeetings.map((m) => `
+          <li>
+            <div><strong>${esc(m.MeetingDate || "Date unknown")}</strong> · ${esc(m.MeetingType || "Meeting")}</div>
+            <div><span class="badge ${finalizedClass(meetingFinalizedState(m))}">${esc(finalizedLabel(meetingFinalizedState(m)))}</span></div>
+            <div>${esc(m.Status || "Unknown")} · ${esc(m.ActionTaken || "No action text")}</div>
+            ${m.MinutesURL ? `<a class="detail-minutes" href="${esc(m.MinutesURL)}" target="_blank" rel="noopener">Open minutes PDF</a>` : ""}
+          </li>
+        `).join("");
+      }
+
+      const commentText = pinComments[String(loc.location_id)]?.text || "";
+
+      panel.innerHTML = `
+        <div class="detail-title">${esc(loc.location_name || "Location")}</div>
+        <div class="detail-row"><strong>Project:</strong> ${esc(projectName)}</div>
+        <div class="detail-row"><strong>Type:</strong> ${esc(loc.location_type || "—")}</div>
+        <div class="detail-row"><strong>Address:</strong> ${esc(loc.address || "—")}</div>
+        <div class="detail-row"><strong>Description:</strong> ${esc(loc.description || "—")}</div>
+        <div class="detail-row"><strong>Coordinates:</strong> ${esc(loc.latitude)}, ${esc(loc.longitude)}</div>
+        ${adminMode ? `
+        <div class="admin-notes-section">
+          <div class="detail-subhead"><i class="fa-solid fa-lock"></i> Admin notes (internal only)</div>
+          <textarea id="admin-pin-comment" class="admin-comment-input" rows="4" placeholder="Mapping notes, follow-ups, data gaps…">${esc(commentText)}</textarea>
+          <div class="admin-comment-actions">
+            <button type="button" id="admin-save-comment" class="admin-save-btn">Save note</button>
+            <span id="admin-save-status" class="admin-save-status"></span>
+          </div>
+          <div class="admin-pin-hint">${adminLocalOnly ? "Saved in this browser only (static site)." : "Shared via EagleAPI when EAGLE_ADMIN_KEY is configured."}</div>
+        </div>` : ""}
+        <div class="detail-subhead">Project meetings (${projectMeetings.length}${meetingsForProject(projectName).length > 24 ? " of many" : ""})</div>
+        <ul class="detail-list">${meetingsHtml}</ul>
+      `;
+
+      if (adminMode) {
+        document.getElementById("admin-save-comment")?.addEventListener("click", () => saveSelectedPinComment());
+      }
+    }
+
+    function adminHeaders() {
+      const key = sessionStorage.getItem(ADMIN_SESSION_KEY) || "";
+      return key ? { "X-Admin-Key": key } : {};
+    }
+
+    async function loadPinComments() {
+      if (!adminMode) return;
+      if (adminLocalOnly) {
+        try {
+          pinComments = JSON.parse(localStorage.getItem(ADMIN_LOCAL_COMMENTS_KEY) || "{}");
+        } catch {
+          pinComments = {};
+        }
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/locations/admin/pin-comments`, { headers: adminHeaders() });
+        if (res.ok) {
+          pinComments = await res.json();
+          return;
+        }
+      } catch (e) { /* fall through to local */ }
+      adminLocalOnly = true;
+      sessionStorage.setItem(ADMIN_LOCAL_MODE_KEY, "1");
+      try {
+        pinComments = JSON.parse(localStorage.getItem(ADMIN_LOCAL_COMMENTS_KEY) || "{}");
+      } catch {
+        pinComments = {};
+      }
+    }
+
+    async function saveSelectedPinComment() {
+      if (!adminMode || !selectedLocation) return;
+      const textarea = document.getElementById("admin-pin-comment");
+      const status = document.getElementById("admin-save-status");
+      const text = (textarea?.value || "").trim();
+      const locationId = String(selectedLocation.location_id);
+
+      if (!adminLocalOnly) {
+        try {
+          const res = await fetch(`${API_BASE}/api/v1/locations/admin/pin-comments/${encodeURIComponent(locationId)}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", ...adminHeaders() },
+            body: JSON.stringify({ text, updated_by: "dashboard" })
+          });
+          if (res.ok) {
+            const entry = await res.json();
+            pinComments[locationId] = entry;
+            if (status) status.textContent = "Saved to server.";
+            renderMap();
+            return;
+          }
+        } catch (e) { /* fall through */ }
+        adminLocalOnly = true;
+        sessionStorage.setItem(ADMIN_LOCAL_MODE_KEY, "1");
+      }
+
+      if (text) {
+        pinComments[locationId] = {
+          text,
+          updated_at: new Date().toISOString(),
+          updated_by: "local"
+        };
+      } else {
+        delete pinComments[locationId];
+      }
+      localStorage.setItem(ADMIN_LOCAL_COMMENTS_KEY, JSON.stringify(pinComments));
+      if (status) status.textContent = "Saved in this browser.";
+      renderMap();
+    }
+
+    function pinHasAdminNote(loc) {
+      const entry = pinComments[String(loc.location_id)];
+      return !!(entry && String(entry.text || "").trim());
+    }
+
+    function updateAdminUi() {
+      const btn = document.getElementById("admin-toggle");
+      if (!btn) return;
+      btn.classList.toggle("active", adminMode);
+      btn.innerHTML = adminMode
+        ? '<i class="fa-solid fa-lock-open"></i> Admin on'
+        : '<i class="fa-solid fa-lock"></i> Admin';
+    }
+
+    function openAdminModal() {
+      const modal = document.getElementById("admin-modal");
+      modal.hidden = false;
+      modal.classList.add("open");
+      document.getElementById("admin-key-input")?.focus();
+    }
+
+    function closeAdminModal() {
+      const modal = document.getElementById("admin-modal");
+      modal.classList.remove("open");
+      modal.hidden = true;
+    }
+
+    async function unlockAdmin(apiMode) {
+      if (adminMode && !apiMode) {
+        adminMode = false;
+        adminLocalOnly = false;
+        sessionStorage.removeItem(ADMIN_SESSION_KEY);
+        sessionStorage.removeItem(ADMIN_LOCAL_MODE_KEY);
+        updateAdminUi();
+        renderDetailPanel(selectedLocation);
+        renderMap();
+        closeAdminModal();
+        return;
+      }
+
+      if (apiMode) {
+        const key = (document.getElementById("admin-key-input")?.value || "").trim();
+        if (!key) return;
+        try {
+          const res = await fetch(`${API_BASE}/api/v1/locations/admin/verify`, { headers: { "X-Admin-Key": key } });
+          if (!res.ok) {
+            alert("That admin key was not accepted. Check EAGLE_ADMIN_KEY on the server, or use browser-only notes.");
+            return;
+          }
+          sessionStorage.setItem(ADMIN_SESSION_KEY, key);
+          sessionStorage.removeItem(ADMIN_LOCAL_MODE_KEY);
+          adminLocalOnly = false;
+        } catch (e) {
+          alert("Could not reach the admin API. Use browser-only notes on the static site.");
+          return;
+        }
+      } else {
+        sessionStorage.removeItem(ADMIN_SESSION_KEY);
+        sessionStorage.setItem(ADMIN_LOCAL_MODE_KEY, "1");
+        adminLocalOnly = true;
+      }
+
+      adminMode = true;
+      updateAdminUi();
+      closeAdminModal();
+      await loadPinComments();
+      renderMap();
+      if (selectedLocation) renderDetailPanel(selectedLocation);
+    }
+
+    function setupAdminControls() {
+      document.getElementById("admin-toggle")?.addEventListener("click", () => {
+        if (adminMode) unlockAdmin(false);
+        else openAdminModal();
+      });
+      document.getElementById("admin-unlock-api")?.addEventListener("click", () => unlockAdmin(true));
+      document.getElementById("admin-unlock-local")?.addEventListener("click", () => unlockAdmin(false));
+      document.getElementById("admin-modal-cancel")?.addEventListener("click", closeAdminModal);
+      document.getElementById("admin-modal")?.addEventListener("click", (e) => {
+        if (e.target.id === "admin-modal") closeAdminModal();
+      });
+
+      if (sessionStorage.getItem(ADMIN_SESSION_KEY) || sessionStorage.getItem(ADMIN_LOCAL_MODE_KEY)) {
+        adminMode = true;
+        adminLocalOnly = !sessionStorage.getItem(ADMIN_SESSION_KEY);
+        updateAdminUi();
+        loadPinComments().then(() => {
+          renderMap();
+          if (selectedLocation) renderDetailPanel(selectedLocation);
+        });
+      }
+    }
+
+    function initMap() {
+      map = L.map("map", { scrollWheelZoom: true }).setView(ESTERO_CENTER, 13);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+      pointLayer = L.layerGroup().addTo(map);
+      roadLayer = L.layerGroup().addTo(map);
+      areaLayer = L.layerGroup().addTo(map);
+    }
+
+    function renderMap() {
+      pointLayer.clearLayers();
+      roadLayer.clearLayers();
+      areaLayer.clearLayers();
+
+      const bounds = [];
+      const filteredLocations = locations.filter((loc) => {
+        if (!currentProjectId) return true;
+        return String(loc.project_id) === String(currentProjectId);
+      });
+
+      filteredLocations.forEach((loc) => {
+        if (loc.latitude == null || loc.longitude == null) return;
+        const latlng = [Number(loc.latitude), Number(loc.longitude)];
+        bounds.push(latlng);
+        const marker = L.circleMarker(latlng, {
+          radius: 10,
+          color: adminMode && pinHasAdminNote(loc) ? "#f59e0b" : "#ffffff",
+          weight: 3,
+          fillColor: adminMode && pinHasAdminNote(loc) ? "#d97706" : "#0052a5",
+          fillOpacity: 1
+        });
+        marker.bindTooltip(esc(loc.location_name || ""), { direction: "top" });
+        marker.on("click", () => renderDetailPanel(loc));
+        marker.addTo(pointLayer);
+      });
+
+      Object.entries(geoms.road_geometries || {}).forEach(([locId, coords]) => {
+        const loc = locations.find((l) => String(l.location_id) === String(locId));
+        if (!loc) return;
+        if (currentProjectId && String(loc.project_id) !== String(currentProjectId)) return;
+        const latlngs = (coords || []).map((c) => [Number(c[1]), Number(c[0])]);
+        if (!latlngs.length) return;
+        const isTrail = String(loc.location_type || "") === "Trail";
+        const color = isTrail ? "#15803d" : "#c2410c";
+        const line = L.polyline(latlngs, { color, weight: 7, opacity: 0.95 });
+        line.bindTooltip(esc(loc.location_name || ""), { sticky: true });
+        line.on("click", () => renderDetailPanel(loc));
+        line.addTo(roadLayer);
+        latlngs.forEach((ll) => bounds.push(ll));
+      });
+
+      Object.entries(geoms.area_geometries || {}).forEach(([locId, polygons]) => {
+        const loc = locations.find((l) => String(l.location_id) === String(locId));
+        if (!loc) return;
+        if (currentProjectId && String(loc.project_id) !== String(currentProjectId)) return;
+        (polygons || []).forEach((ring) => {
+          const latlngs = (ring || []).map((c) => [Number(c[1]), Number(c[0])]);
+          if (!latlngs.length) return;
+          const poly = L.polygon(latlngs, {
+            color: "#6d28d9",
+            weight: 3,
+            fillColor: "#6d28d9",
+            fillOpacity: 0.2
+          });
+          poly.bindTooltip(esc(loc.location_name || ""), { sticky: true });
+          poly.on("click", () => renderDetailPanel(loc));
+          poly.addTo(areaLayer);
+          latlngs.forEach((ll) => bounds.push(ll));
+        });
+      });
+
+      if (bounds.length) map.fitBounds(bounds, { padding: [36, 36], maxZoom: 14 });
+      else map.setView(ESTERO_CENTER, 13);
+    }
+
+    function statusClass(status) {
+      const s = String(status || "").toLowerCase();
+      if (["accepted", "pending", "rejected", "tabled", "cancelled"].includes(s)) return s;
+      return "tabled";
+    }
+
+    function meetingFinalizedState(row) {
+      const raw = (row.Finalized || "").trim();
+      if (raw === "Yes" || raw === "No" || raw === "Cancelled") return raw;
+      const st = String(row.Status || "").toLowerCase();
+      if (st === "cancelled") return "Cancelled";
+      return (row.MinutesURL || "").trim().startsWith("http") ? "Yes" : "No";
+    }
+
+    function finalizedLabel(state) {
+      if (state === "Yes") return "Finalized — minutes posted";
+      if (state === "Cancelled") return "Cancelled meeting";
+      return "Not finalized — minutes not posted yet";
+    }
+
+    function finalizedClass(state) {
+      if (state === "Yes") return "finalized-yes";
+      if (state === "Cancelled") return "finalized-cancelled";
+      return "finalized-no";
+    }
+
+    function isPzdbRecord(row) {
+      const type = String(row.MeetingType || "").toLowerCase();
+      const proj = String(row.ProjectName || "").toLowerCase();
+      return type.includes("pzdb") || proj.includes("pz&db") || proj.includes("pzdb");
+    }
+
+    function updatePzdbCivicNotice(rows) {
+      const el = document.getElementById("pzdb-civic-notice");
+      if (!el) return;
+      const pzdbProject = currentProjectId === PZDB_PROJECT_ID;
+      const hasPzdb = (rows || []).some(isPzdbRecord);
+      el.hidden = !(pzdbProject || hasPzdb);
+    }
+
+    function filteredMeetings(searchText) {
+      const q = (searchText || "").trim().toLowerCase();
+      return meetings.filter((m) => {
+        if (currentProjectId) {
+          const proj = projectById(currentProjectId);
+          if (!proj || m.ProjectName !== proj.project_name) return false;
+        }
+        if (!q) return true;
+        const hay = [
+          m.ProjectName, m.MeetingType, m.MeetingDate, m.Status, m.ActionTaken, m.Title
+        ].join(" ").toLowerCase();
+        return hay.includes(q);
+      });
+    }
+
+    function renderMeetings() {
+      const rows = filteredMeetings(document.getElementById("meeting-search").value);
+      const list = document.getElementById("meeting-list");
+      const count = document.getElementById("meeting-count");
+      list.innerHTML = "";
+      if (!rows.length) {
+        count.textContent = "0 meetings shown";
+        list.innerHTML = '<li class="meeting-item">No meetings match your filter/search.</li>';
+        return;
+      }
+      count.textContent = `${rows.length} meeting${rows.length === 1 ? "" : "s"} shown`;
+      updatePzdbCivicNotice(rows);
+      const frag = document.createDocumentFragment();
+      rows.forEach((m) => {
+        const li = document.createElement("li");
+        li.className = "meeting-item";
+        const fin = meetingFinalizedState(m);
+        const pzdb = isPzdbRecord(m);
+        li.innerHTML = `
+          <div class="meeting-date">${esc(m.MeetingDate || "Date unknown")}</div>
+          <div class="meeting-meta"><strong>${esc(m.ProjectName || "Unknown project")}</strong></div>
+          <div class="meeting-meta">${esc(m.MeetingType || "Meeting")}</div>
+          ${pzdb ? `<div class="meeting-meta" style="color:#6d28d9;font-weight:600;"><i class="fa-solid fa-hard-hat"></i> Project data in progress — your input is welcome</div>` : ""}
+          <span class="badge ${finalizedClass(fin)}" title="Whether official minutes are posted">${esc(fin === "Yes" ? (pzdb ? "Minutes posted" : "Finalized — minutes posted") : finalizedLabel(fin))}</span>
+          ${pzdb ? `<span class="badge progress-badge" style="margin-left:6px;">In progress</span>` : ""}
+          <span class="badge ${statusClass(m.Status)}" style="margin-left:6px;">${esc(m.Status || "Unknown")}</span>
+          ${m.MinutesURL ? `<a class="meeting-link" href="${esc(m.MinutesURL)}" target="_blank" rel="noopener">Open minutes</a>` : `<div class="meeting-meta" style="margin-top:6px;font-style:italic;">Minutes not available yet</div>`}
+          ${pzdb ? `<a class="civic-btn primary" style="margin-top:8px;" href="${CIVIC_LINKS.engageContact}" target="_blank" rel="noopener"><i class="fa-solid fa-comments"></i> Share your opinion</a>` : ""}
+        `;
+        frag.appendChild(li);
+      });
+      list.appendChild(frag);
+    }
+
+    function renderStats() {
+      document.getElementById("stat-projects").textContent = projects.length;
+      document.getElementById("stat-locations").textContent = locations.length;
+      document.getElementById("stat-meetings").textContent = meetings.length;
+      document.getElementById("stat-minutes").textContent = meetings.filter((m) => m.MinutesURL).length;
+    }
+
+    function setupControls() {
+      const projectFilter = document.getElementById("project-filter");
+      projects.forEach((p) => {
+        const opt = document.createElement("option");
+        opt.value = p.project_id;
+        opt.textContent = p.project_name;
+        projectFilter.appendChild(opt);
+      });
+      projectFilter.addEventListener("change", (e) => {
+        currentProjectId = e.target.value;
+        renderMap();
+        renderMeetings();
+      });
+      document.getElementById("meeting-search").addEventListener("input", renderMeetings);
+
+      const btns = {
+        "": document.getElementById("text-normal"),
+        "large": document.getElementById("text-large"),
+        "xlarge": document.getElementById("text-xlarge")
+      };
+      function apply(scale) {
+        if (scale) document.documentElement.setAttribute("data-textscale", scale);
+        else document.documentElement.removeAttribute("data-textscale");
+        Object.entries(btns).forEach(([k, b]) => b.setAttribute("aria-pressed", String(k === scale)));
+        setTimeout(() => map.invalidateSize(), 60);
+      }
+      btns[""].addEventListener("click", () => apply(""));
+      btns["large"].addEventListener("click", () => apply("large"));
+      btns["xlarge"].addEventListener("click", () => apply("xlarge"));
+    }
+
+    function showLoadError(err) {
+      console.error(err);
+      const list = document.getElementById("meeting-list");
+      document.getElementById("meeting-count").textContent = "";
+      list.innerHTML = '<li class="meeting-item">Could not load data files. Confirm this page is served from the repo root on GitHub Pages.</li>';
+      document.getElementById("detail-panel").innerHTML = '<div class="detail-empty">Data load failed. Check browser console/network.</div>';
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      initMap();
+      try {
+        await loadData();
+        setupControls();
+        setupAdminControls();
+        renderStats();
+        renderMap();
+        renderMeetings();
+      } catch (err) {
+        showLoadError(err);
+      }
+    });
+  </script>
+</body>
+</html>

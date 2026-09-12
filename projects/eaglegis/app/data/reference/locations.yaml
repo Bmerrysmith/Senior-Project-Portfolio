@@ -1,0 +1,55 @@
+# Project locations with WGS-84 lat/long.
+# Lat/long must fall within the Estero bounding box (validated by the pipeline).
+- location_id: 1
+  project_id: 1
+  location_name: "BERT Rail Trail Corridor"
+  location_type: "Trail"
+  address: "Estero, FL 33928"
+  description: "Multi-use trail along the BERT corridor."
+  latitude: 26.4339
+  longitude: -81.8157
+
+- location_id: 2
+  project_id: 2
+  location_name: "Estero Bay Village Septic Area"
+  location_type: "Infrastructure"
+  address: "Estero Bay Village, Estero FL"
+  description: "Septic to sewer conversion zone."
+  latitude: 26.4408
+  longitude: -81.8225
+
+- location_id: 3
+  project_id: 2
+  location_name: "Sunny Grove Septic Area"
+  location_type: "Infrastructure"
+  address: "Sunny Grove, Estero FL"
+  description: "Septic to sewer conversion zone."
+  latitude: 26.4372
+  longitude: -81.8251
+
+- location_id: 4
+  project_id: 2
+  location_name: "Cypress Bend Septic Area"
+  location_type: "Infrastructure"
+  address: "Cypress Bend, Estero FL"
+  description: "Septic to sewer conversion zone."
+  latitude: 26.4355
+  longitude: -81.8203
+
+- location_id: 5
+  project_id: 3
+  location_name: "Corkscrew Road Corridor"
+  location_type: "Road"
+  address: "Corkscrew Road, Estero FL"
+  description: "Corkscrew Road widening corridor."
+  latitude: 26.4386
+  longitude: -81.8084
+
+- location_id: 6
+  project_id: 4
+  location_name: "Village of Estero Council Chambers"
+  location_type: "Infrastructure"
+  address: "9401 Corkscrew Palms Blvd, Estero FL 33928"
+  description: "Primary meeting location for Village Council and PZ&DB."
+  latitude: 26.4361
+  longitude: -81.8062

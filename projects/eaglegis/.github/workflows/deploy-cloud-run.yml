@@ -1,0 +1,84 @@
+name: Deploy RAG service to Cloud Run
+
+# Builds the rag_service image and deploys it to Cloud Run on push to main.
+#
+# Auth uses Workload Identity Federation (no long-lived JSON keys). One-time
+# setup of the WIF provider + deploy service account is documented in
+# docs/DEPLOY_CLOUD_RUN.md.
+#
+# Required repo secrets / variables:
+#   secrets.GCP_WIF_PROVIDER   full resource name of the WIF provider
+#   secrets.GCP_DEPLOY_SA      deploy service account email
+#   secrets.GCP_PROJECT_ID         target project id
+#   secrets.UTILITY_OLLAMA_URL     (optional) small/CPU utility LLM service URL
+#   secrets.GENERATION_OLLAMA_URL  (optional) larger/GPU generation LLM service URL
+#   vars.GCP_REGION                (optional) region, defaults to us-central1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "rag_service/**"
+      - ".github/workflows/deploy-cloud-run.yml"
+  workflow_dispatch:
+
+# Required for Workload Identity Federation.
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  REGION: ${{ vars.GCP_REGION || 'us-central1' }}
+  REPO: eaglegis
+  SERVICE: eaglegis-rag
+
+jobs:
+  deploy:
+    name: build + push + deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        name: Authenticate to Google Cloud (WIF)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SA }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - name: Build and push image
+        run: |
+          IMAGE="${REGION}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${REPO}/${SERVICE}:${GITHUB_SHA::7}"
+          docker build -t "$IMAGE" rag_service
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: ${{ env.IMAGE }}
+          flags: >-
+            --allow-unauthenticated
+            --memory=4Gi
+            --cpu=2
+            --timeout=300
+            --concurrency=8
+            --max-instances=3
+          env_vars: |
+            UTILITY_OLLAMA_URL=${{ secrets.UTILITY_OLLAMA_URL }}
+            UTILITY_MODEL=qwen3:1.7b
+            GENERATION_OLLAMA_URL=${{ secrets.GENERATION_OLLAMA_URL }}
+            GENERATION_MODEL=qwen3:4b
+
+      - name: Show service URL
+        run: |
+          gcloud run services describe "${SERVICE}" --region "${REGION}" \
+            --format='value(status.url)'

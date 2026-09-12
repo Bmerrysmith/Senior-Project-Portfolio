@@ -1,0 +1,111 @@
+name: Publish to Supabase
+
+# Runs the data refinement pipeline against Supabase.
+#
+#   - On every push to main:   silver is rebuilt and upserted into Supabase,
+#                              then verified. Catches code/data changes.
+#   - Nightly at 06:00 UTC:    same flow without code changes — catches drift
+#                              and re-asserts the canonical state on the
+#                              serving copy.
+#   - On manual dispatch:      operator can trigger a publish from the UI,
+#                              optionally with --dry-run to preview, or with
+#                              --reset-reference to wipe + reseed the small
+#                              reference tables when remote IDs have drifted
+#                              out of alignment with the YAML.
+#
+# Required repo secrets: SUPABASE_URL, SUPABASE_KEY (or SUPABASE_SERVICE_KEY).
+# If the secrets aren't set, the pipeline gracefully skips publish/verify
+# and the job still passes — that lets a fork build CI without Supabase.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/data/meetings.csv"
+      - "app/data/documents.csv"
+      - "app/data/reference/**"
+      - "app/data/silver/**"
+      - "app/pipeline/**"
+      - "requirements.txt"
+      - ".github/workflows/publish.yml"
+  schedule:
+    # 06:00 UTC = 02:00 EDT / 01:00 EST — before the working day starts.
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run --dry-run (no remote writes)"
+        required: false
+        default: "false"
+        type: choice
+        options: ["false", "true"]
+      reset_reference:
+        description: >-
+          DESTRUCTIVE: delete all rows from projects/meeting_types/locations
+          on the remote before publish, then reseed from YAML. Use to recover
+          when remote IDs have drifted out of alignment with the YAML. Strongly
+          recommended to first run with dry_run=true.
+        required: false
+        default: "false"
+        type: choice
+        options: ["false", "true"]
+
+concurrency:
+  group: publish-supabase
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: publish + verify
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - run: pip install -r requirements.txt
+
+      - name: Publish + verify (strict)
+        run: |
+          DRY_RUN_FLAG=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            DRY_RUN_FLAG="--dry-run"
+          fi
+          RESET_FLAG=""
+          if [ "${{ github.event.inputs.reset_reference }}" = "true" ]; then
+            echo "::warning::reset_reference=true — projects/meeting_types/locations will be DELETED on the remote before publish."
+            RESET_FLAG="--reset-reference"
+          fi
+          python -m app.pipeline.run --publish --verify --strict $RESET_FLAG $DRY_RUN_FLAG
+
+      - name: Upload run manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: publish-manifest-${{ github.run_id }}
+          path: app/data/runs/
+          retention-days: 90
+          if-no-files-found: warn
+
+      - name: Summarize manifest in job summary
+        if: always()
+        run: |
+          # Pretty-print the latest manifest into the workflow summary so
+          # operators can see counts/drift without downloading artifacts.
+          LATEST=$(ls -td app/data/runs/*/ 2>/dev/null | head -n1)
+          if [ -n "$LATEST" ] && [ -f "$LATEST/manifest.json" ]; then
+            {
+              echo "## Pipeline manifest"
+              echo ""
+              echo '```json'
+              cat "$LATEST/manifest.json"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi

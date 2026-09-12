@@ -1,0 +1,37 @@
+# Village of Estero projects.
+# Edit this file to add/update a project, then run `python -m app.pipeline.run`.
+- project_id: 1
+  project_name: "BERT Rail Trail"
+  description: >-
+    Multi-use trail along the Bonita-Estero Regional Trail (BERT) corridor
+    through the Village of Estero.
+  start_year: 2021
+  status: "Active"
+
+- project_id: 2
+  project_name: "Septic to Sewer Conversion"
+  description: >-
+    Utility extension project converting multiple Estero neighborhoods from
+    septic systems to central sewer, including Estero Bay Village, Sunny
+    Grove, Cypress Bend, and Broadway Avenue East.
+  start_year: 2021
+  status: "Active"
+
+- project_id: 3
+  project_name: "Corkscrew Road Widening"
+  description: >-
+    Corkscrew Road widening, intersection improvements, and traffic signal
+    installations.
+  start_year: 2021
+  status: "Active"
+
+- project_id: 4
+  project_name: "PZ&DB General Meeting Records"
+  description: >-
+    Administrative meeting records for the Village of Estero Planning,
+    Zoning & Design Board. EagleGIS project mapping for PZ&DB is still
+    in progress — residents may share input via Engage Estero or Village
+    public comment while this work continues.
+  start_year: 2021
+  status: "Active"
+  data_status: "in_progress"

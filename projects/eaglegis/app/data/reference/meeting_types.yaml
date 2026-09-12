@@ -1,0 +1,16 @@
+# Meeting type taxonomy.
+- type_id: 1
+  type_name: "Village Council"
+  description: "Regular Village Council meeting"
+
+- type_id: 2
+  type_name: "Planning Zoning & Design Board"
+  description: "Combined planning, zoning, and design review board"
+
+- type_id: 3
+  type_name: "Public Hearing"
+  description: "Public input sessions on proposed projects"
+
+- type_id: 4
+  type_name: "Workshop"
+  description: "Informational workshops for Council and staff"
