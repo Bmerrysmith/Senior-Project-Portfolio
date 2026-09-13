@@ -1,0 +1,55 @@
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Python build / editable-install artifacts
+build/
+dist/
+*.egg-info/
+
+# Secrets and machine-local configuration
+.env
+.env.*
+!.env.example
+
+# Model, run, and generated inference artifacts
+checkpoints/
+artifacts/
+runs/
+results/
+outputs/
+inference_output/
+*.pth
+*.pt
+*.onnx
+*.engine
+
+# Bulk datasets stay in versioned artifact storage, not Git
+dataset/
+data/rice_training_curated/aerial/
+data/rice_training_curated/front/
+*.zip
+*.tar.gz
+
+# Notebook and editor state
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# OS and local tooling junk
+.codex-publish/
+.DS_Store
+Thumbs.db
+desktop.ini
+node_modules/
+package.json
+package-lock.json
+*.b64

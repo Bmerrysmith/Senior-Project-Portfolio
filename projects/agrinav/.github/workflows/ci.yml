@@ -1,0 +1,106 @@
+# Fast pull-request CI: lint, type-check, and CPU tests. Heavy GPU training is
+# never run here.
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: CI only needs to read the checked-out code.
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install linters
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff==0.8.6 black==26.3.1
+      - name: Ruff
+        run: ruff check --output-format=github .
+      - name: Black
+        run: black --check --diff .
+
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install mypy
+        run: |
+          python -m pip install --upgrade pip
+          pip install mypy==1.14.1
+      # Non-blocking for now: legacy ML modules are typed incrementally.
+      # See docs/adr/0002-packaging-and-ci.md.
+      - name: MyPy (non-blocking)
+        continue-on-error: true
+        run: mypy src
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install CPU PyTorch + project (with dev extras)
+        run: |
+          python -m pip install --upgrade pip
+          # Pin to the CPU wheel index so CI never pulls multi-GB CUDA builds.
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -e ".[dev]"
+      - name: Run test suite (CPU)
+        run: pytest --cov=agrinav --cov-report=xml --cov-report=term-missing
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.python-version }}
+          path: coverage.xml
+          if-no-files-found: ignore
+
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Build sdist + wheel
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+      - name: Check distribution metadata
+        run: |
+          pip install twine
+          twine check dist/*

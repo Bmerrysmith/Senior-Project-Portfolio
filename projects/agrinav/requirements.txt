@@ -1,0 +1,10 @@
+# Dependencies are defined in pyproject.toml (single source of truth).
+# Install the project from the repository root:
+#
+#   pip install -e ".[train]"    # runtime + training/model stack (torch, transformers)
+#   pip install -e ".[dev]"      # + linting/testing tools
+#   pip install -e "."           # data-tooling base only (no deep-learning stack)
+#
+# This file is retained so `pip install -r requirements.txt` (e.g. in Colab)
+# still installs the training stack.
+-e .[train]

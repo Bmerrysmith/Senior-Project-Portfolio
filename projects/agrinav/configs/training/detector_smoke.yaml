@@ -1,0 +1,47 @@
+# Detector training -- SMOKE config.
+#
+# Purpose: fastest possible end-to-end exercise of the training loop (forward +
+# backward + checkpoint write). NOT a quality run. Pair with a tiny --overfit N
+# or a handful of images. Offline/CPU safe: no ImageNet fetch, no AMP.
+#
+# ann_file / images_root are deliberately absent -- pass them on the CLI so no
+# machine-specific absolute path is baked into version control:
+#   python -m agrinav.training.weeddet_train \
+#     --ann-file artifacts/detector_v1/split_v1/train.coco.json \
+#     --images-root /path/to/RiceSEG --config configs/training/detector_smoke.yaml \
+#     --overfit 8
+
+device: cpu                 # force CPU; the smoke run must not require a GPU
+seed: 42                    # deterministic RNG seed
+deterministic: true         # cudnn deterministic (no-op on CPU, set for parity)
+
+# --- model ---
+# num_classes is derived from class_names; do not set it here.
+class_names: [rice_protect, weed_target, non_target_aquatic]  # name -> contiguous id order
+anchor_base_scale: 3        # anchor base scale (WeedDet default)
+lsc_k: 7                    # large-separable-conv kernel in the head
+use_atss: true              # ATSS positive/negative anchor assignment
+
+# --- optimisation ---
+pretrained_backbone: false  # NO ImageNet warm-start (loader fails closed offline)
+img_size: 512               # square letterbox input
+batch_size: 2               # smallest useful batch
+num_workers: 0              # single-process loading -> simplest, most portable
+base_lr: 0.01               # higher LR so the loss visibly moves in a few steps
+momentum: 0.9
+weight_decay: 0.0001
+num_epochs: 1               # one pass only
+save_every: 1               # write a periodic checkpoint every epoch
+repeat_factor: 1            # no dataset repeat
+min_lr: 0.00001             # cosine floor
+warmup_factor: 0.001        # LR multiplier at warmup start
+grad_clip: 0.5              # gradient-norm clip
+
+# --- regularisation / speed ---
+augment: false              # deterministic inputs make the smoke result reproducible
+use_amp: false              # AMP is CUDA-only
+use_ema: false              # skip EMA copy to keep the smoke run cheap
+ema_decay: 0.999            # unused when use_ema is false
+
+# --- outputs ---
+checkpoint_dir: checkpoints/weeddet_smoke  # relative to CWD; gitignored artifact dir

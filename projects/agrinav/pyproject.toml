@@ -1,0 +1,151 @@
+# AgriNav — packaging + tooling configuration.
+#
+# Layout: src/ (import package is `agrinav`). Install for development with
+#   pip install -e ".[dev]"
+# Data tooling only needs the base deps; the training/model stack lives in the
+# `train` extra (torch/torchvision/transformers) so lightweight consumers can
+# skip it (roadmap §5: avoid the full DL stack in inference-only environments).
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agrinav"
+version = "0.1.0"
+description = "Rice/weed perception research: data tooling, segmentation pretraining, and detector experiments."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Benjamin Merryman-Smith" }]
+# No open-source license has been selected. This portfolio is publicly viewable,
+# but no reuse rights are granted unless the owner later adds a license.
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+# Base = data-tooling stack (pure-python / CV, no deep-learning framework).
+dependencies = [
+    "numpy>=1.24",
+    "Pillow>=10",
+    "tqdm>=4.65",
+    "matplotlib>=3.7",
+    "opencv-python-headless>=4.8",
+    "pycocotools>=2.0.7",
+    "shapely>=2.0",
+]
+
+[project.optional-dependencies]
+# torch/torchvision are pinned as ranges, not exact: the concrete wheel is
+# CPU/CUDA- and platform-specific and is selected per environment (roadmap
+# Gate-1 item 5). CI installs the CPU wheels from the PyTorch CPU index.
+train = ["torch>=2.2,<3.0", "torchvision>=0.17,<1.0", "transformers>=4.30"]
+inference = ["torch>=2.2,<3.0", "torchvision>=0.17,<1.0"]
+docs = ["mkdocs>=1.6", "mkdocs-material>=9.5"]
+dev = [
+    "agrinav[train]",
+    "ruff==0.8.6",
+    "black==26.3.1",
+    "mypy==1.14.1",
+    "pytest>=8",
+    "pytest-cov>=5",
+    "pytest-subtests>=0.13",
+    "pre-commit>=4",
+]
+
+[project.scripts]
+agrinav = "agrinav.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# --------------------------------------------------------------------------- #
+# Ruff — linting + import sorting (Black owns formatting).
+# --------------------------------------------------------------------------- #
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+# `weeddet_v6b.py` is held byte-stable pending its Gate-4 correctness rewrite: the
+# July-20 audit references its exact line numbers (e.g. weeddet_v6b.py:1076-1088),
+# so it is reformatted only when that rewrite lands. See docs/adr/0002-packaging-and-ci.md.
+extend-exclude = [
+    "_archive",
+    "notebooks",
+    "active",
+    "paper",
+    "drive_links",
+    "src/agrinav/models/weeddet_v6b.py",
+]
+
+[tool.ruff.lint]
+# Conservative starting set: pyflakes (F), a safe pycodestyle subset (E4/E7/E9),
+# warnings (W) and import sorting (I). Line length is owned by the formatter, so
+# E501 is deliberately not selected. Stricter rule families (B, UP, SIM, PTH) can
+# be enabled once the baseline is green — see docs/adr/0002-packaging-and-ci.md.
+select = ["E4", "E7", "E9", "F", "W", "I"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["agrinav"]
+
+# --------------------------------------------------------------------------- #
+# Black — canonical formatter.
+# --------------------------------------------------------------------------- #
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+# weeddet_v6b.py is held byte-stable pending its Gate-4 rewrite (see [tool.ruff]).
+extend-exclude = '''
+/(
+    _archive
+  | notebooks
+  | active
+  | paper
+  | drive_links
+)/
+| weeddet_v6b\.py
+'''
+
+# --------------------------------------------------------------------------- #
+# MyPy — lenient over legacy ML modules (many third-party libs ship no stubs).
+# Tightened incrementally; kept non-blocking in CI for now.
+# --------------------------------------------------------------------------- #
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = false
+warn_redundant_casts = true
+no_implicit_optional = true
+exclude = '(^_archive/|^notebooks/|^active/|^paper/)'
+
+# --------------------------------------------------------------------------- #
+# Pytest — markers mirror the roadmap test taxonomy (roadmap §7). The package is
+# import-installed (editable), so no pythonpath juggling is needed.
+# --------------------------------------------------------------------------- #
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "unit: fast, isolated CPU tests",
+    "integration: multi-component tests",
+    "slow: tests that take more than a few seconds",
+    "gpu: requires a CUDA-capable GPU",
+    "network: requires network access",
+    "performance: latency/throughput/memory benchmarks",
+]
+
+# --------------------------------------------------------------------------- #
+# Coverage.
+# --------------------------------------------------------------------------- #
+[tool.coverage.run]
+branch = true
+source = ["agrinav"]
+omit = ["*/_archive/*", "*/tests/*", "*/notebooks/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]

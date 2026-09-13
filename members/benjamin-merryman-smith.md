@@ -10,7 +10,7 @@ Focus: Computer vision, deep-learning training and evaluation infrastructure, an
 ## AgriNav: Rice/Weed Perception for an Autonomous Paddy Tractor
 
 **Role:** Perception Lead, FGCU senior project (CEN 4930) | Spring 2026 to Summer 2026
-**Links:** [Source repo](https://github.com/Bmerrysmith/Autonomous-tractor-system) · [Technical deep dive](projects/agrinav/README.md)
+**Links:** [Source repo](https://github.com/Bmerrysmith/Autonomous-tractor-system) · [Technical deep dive](../projects/agrinav/README.md)
 **Note:** This covers perception only. Datasets, model weights, navigation, and spray/actuation code are not included.
 
 ### What it is
