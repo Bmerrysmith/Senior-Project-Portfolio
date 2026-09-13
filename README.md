@@ -3,7 +3,7 @@
 Software Engineering, Florida Gulf Coast University | Expected May 2027
 Focus: LLM agent systems, RAG pipelines, and quantum ML applied to infrastructure resilience
 
-[GitHub](https://github.com/ishitachakka) · [LinkedIn](#)
+[GitHub](https://github.com/ishitachakka) · [LinkedIn](https://www.linkedin.com/in/ishitachakkalakkal-494113243)
 
 ---
 
@@ -14,12 +14,13 @@ Focus: LLM agent systems, RAG pipelines, and quantum ML applied to infrastructur
 
 ### What it is
 
-Most digital twin systems for transportation assume communication just works. After a hurricane, it doesn't — cellular towers go down, fiber links get cut, and the sensor data emergency responders depend on arrives late or not at all, while physically damaged infrastructure becomes accessible to adversaries who can spoof readings. QuakeTwin is a digital twin platform built around that reality: it couples a QKD-secured V2X communication layer with SeQUeNCe-based quantum network simulation to model what happens to infrastructure recovery decisions when communication degrades and comes under attack. The platform runs on real FDOT pavement data, Google Street View imagery, and Florida DOT traffic feeds. Submitted to IEEE GLOBECOM 2026 (SAC: Quantum Communications and Information Technology).
+Most digital twin systems for transportation assume communication just works. After a hurricane, it doesn't — cellular towers go down, fiber links get cut, and the sensor data emergency responders depend on arrives late or not at all, while physically damaged infrastructure becomes accessible to adversaries who can spoof readings. QuakeTwin is a digital twin platform built around that reality: it couples a QKD-secured V2X communication layer with SeQUeNCe-based quantum network simulation to model what happens to infrastructure recovery decisions when communication degrades and comes under attack. The platform runs on real FDOT pavement data, Google Street View imagery, and Florida DOT traffic feeds. Co-authored paper accepted at IEEE VTC2026-Fall Boston; currently extending the system with drone integration and multi-agent coordination.
 
 ### What I built
 
 - **QKD-secured communication layer.** BB84/CV-QKD channels simulated via SeQUeNCe, with configurable latency and packet-loss models standing in for real disaster-degraded links.
 - **Security fallback logic.** QBER is monitored continuously — when it crosses the 11% Shor-Preskill threshold, the channel is flagged as compromised and the system falls back to cached digital-twin state rather than acting on data that may have been spoofed.
+- **Reward function design & RL pipelines.** Designed reward functions and RL agent pipelines integrated with Unity–Cesium simulation environments for real-time infrastructure visualization and decision-making.
 - **FastAPI backend** serving the digital twin state and experiment results, deployed on Railway.
 - **Experiment suite.** Six experiments across ten independent seeds — latency sweep, MITM attack security, lambda sensitivity, combined stress, packet-loss degradation, and SeQUeNCe channel sensitivity — with results published alongside the code.
 - **Real-world data integration.** FDOT pavement condition data, Google Street View imagery, and Florida DOT traffic feeds feed the physical layer instead of synthetic inputs.
@@ -33,7 +34,7 @@ Most digital twin systems for transportation assume communication just works. Af
 
 ### Stack
 
-Python, FastAPI, SeQUeNCe (quantum network simulation), Vercel, Railway
+Python, FastAPI, SeQUeNCe (quantum network simulation), Unity, Cesium, Vercel, Railway
 
 ### What I took away
 
@@ -93,8 +94,9 @@ Building the fallback path (direct-text comparison, no vector DB required) turne
 
 - **Switch4Good Database System** — full-stack partnership-tracking system (Express, PostgreSQL, JWT auth) built with a team for a nonprofit community partner.
 - **Automated Selenium/TestNG test suite** (CEN 4072, Software Testing) — built with Gabriella Vallar.
-- **AI Platform Developer Intern, NetStratum Technologies** — LLM agent workflows, RAG pipelines, and voice AI for enterprise automation (proprietary; not included here).
+- **AI Platform Engineer, NetStratum Technologies — BlueMesh Platform** (Nov 2025–Present) — built and deployed Sally, a real-time voice AI companion for an elder-care calling service (Chatterbox TTS, Silero VAD, Distil-Whisper STT, multi-layer memory); fine-tuned GLM 4.5 Air (LoRA/QLoRA) for a production persona adapter served via vLLM; built voice-enabled AI agents and MCP connectors on the Oasis platform (proprietary; not included here).
+- **Backend Developer Intern, CloudGen LLC — NextGen Platform** (Jun 2022–Nov 2025) — built and maintained FastAPI backend services, MCP server tools, and API routing infrastructure for LLM agent pipelines; designed vector database systems for AI chatbot and document retrieval across PostgreSQL, MySQL, and MongoDB (proprietary; not included here).
 
 ## Certifications
 
-AWS Certified Cloud Practitioner · NVIDIA Certified Associate (Generative AI & LLMs) · NVIDIA Certified Professional — Agentic AI (in progress)
+AWS Certified Cloud Practitioner (2025–2027) · NVIDIA Certified Associate — Generative AI & LLMs (2025–2027) · NVIDIA Certified Professional — Agentic AI (2026–2028)
