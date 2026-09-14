@@ -1,0 +1,253 @@
+{
+  "$dtId": "dtmi:fgcu:TrafficSensor;1",
+  "$etag": "W/\"9f78e89f-5d6f-5d45-9c8c-9c8c9c8c9c8c\"",
+  "$metadata": {
+    "$model": "dtmi:fgcu:TrafficSensor;1",
+    "sensorId": {
+      "lastUpdateTime": "2024-01-20T10:00:00.000Z"
+    },
+    "location": {
+      "lastUpdateTime": "2024-01-20T10:00:00.000Z"
+    },
+    "sensorType": {
+      "lastUpdateTime": "2024-01-20T10:00:00.000Z"
+    }
+  },
+  "@id": "dtmi:fgcu:TrafficSensor;1",
+  "@type": "Interface",
+  "@context": [
+    "dtmi:dtdl:context;3"
+  ],
+  "displayName": "FGCU Traffic Sensor",
+  "description": "IoT sensor for monitoring traffic conditions on FGCU campus roads",
+  "contents": [
+    {
+      "@type": "Property",
+      "name": "sensorId",
+      "displayName": "Sensor ID",
+      "description": "Unique identifier for the traffic sensor",
+      "schema": "string",
+      "writable": false
+    },
+    {
+      "@type": "Property",
+      "name": "location",
+      "displayName": "Sensor Location",
+      "description": "GPS coordinates of sensor installation",
+      "schema": {
+        "@type": "Object",
+        "fields": [
+          {
+            "name": "latitude",
+            "schema": "double"
+          },
+          {
+            "name": "longitude",
+            "schema": "double"
+          },
+          {
+            "name": "elevation",
+            "schema": "double"
+          }
+        ]
+      },
+      "writable": true
+    },
+    {
+      "@type": "Property",
+      "name": "sensorType",
+      "displayName": "Sensor Type",
+      "description": "Type of traffic detection technology",
+      "schema": {
+        "@type": "Enum",
+        "valueSchema": "string",
+        "enumValues": [
+          {
+            "name": "inductive_loop",
+            "displayName": "Inductive Loop",
+            "enumValue": "INDUCTIVE_LOOP"
+          },
+          {
+            "name": "radar",
+            "displayName": "Radar Sensor",
+            "enumValue": "RADAR"
+          },
+          {
+            "name": "camera",
+            "displayName": "Video Camera",
+            "enumValue": "CAMERA"
+          },
+          {
+            "name": "lidar",
+            "displayName": "LiDAR Sensor",
+            "enumValue": "LIDAR"
+          },
+          {
+            "name": "magnetic",
+            "displayName": "Magnetic Sensor",
+            "enumValue": "MAGNETIC"
+          }
+        ]
+      },
+      "writable": true
+    },
+    {
+      "@type": "Property",
+      "name": "installationDate",
+      "displayName": "Installation Date",
+      "description": "Date when sensor was installed",
+      "schema": "date",
+      "writable": true
+    },
+    {
+      "@type": "Property",
+      "name": "isActive",
+      "displayName": "Sensor Status",
+      "description": "Whether the sensor is currently operational",
+      "schema": "boolean",
+      "writable": true
+    },
+    {
+      "@type": "Telemetry",
+      "name": "vehicleCount",
+      "displayName": "Vehicle Count",
+      "description": "Number of vehicles detected in the last measurement period",
+      "schema": "integer"
+    },
+    {
+      "@type": "Telemetry",
+      "name": "averageSpeed",
+      "displayName": "Average Speed",
+      "description": "Average speed of detected vehicles",
+      "schema": "double",
+      "unit": "milePerHour"
+    },
+    {
+      "@type": "Telemetry",
+      "name": "occupancy",
+      "displayName": "Lane Occupancy",
+      "description": "Percentage of time the detection zone is occupied",
+      "schema": "double",
+      "unit": "percent"
+    },
+    {
+      "@type": "Telemetry",
+      "name": "flow",
+      "displayName": "Traffic Flow",
+      "description": "Vehicles per hour passing the sensor",
+      "schema": "integer"
+    },
+    {
+      "@type": "Telemetry",
+      "name": "density",
+      "displayName": "Traffic Density",
+      "description": "Number of vehicles per unit length of road",
+      "schema": "double",
+      "unit": "vehiclePerMile"
+    },
+    {
+      "@type": "Telemetry",
+      "name": "batteryLevel",
+      "displayName": "Battery Level",
+      "description": "Remaining battery charge for wireless sensors",
+      "schema": "double",
+      "unit": "percent"
+    },
+    {
+      "@type": "Telemetry",
+      "name": "signalStrength",
+      "displayName": "Signal Strength",
+      "description": "Communication signal strength",
+      "schema": "integer",
+      "unit": "decibel"
+    },
+    {
+      "@type": "Telemetry",
+      "name": "temperature",
+      "displayName": "Device Temperature",
+      "description": "Internal temperature of sensor device",
+      "schema": "double",
+      "unit": "degreeCelsius"
+    },
+    {
+      "@type": "Property",
+      "name": "calibrationDate",
+      "displayName": "Last Calibration",
+      "description": "Date of last sensor calibration",
+      "schema": "date",
+      "writable": true
+    },
+    {
+      "@type": "Property",
+      "name": "maintenanceSchedule",
+      "displayName": "Maintenance Schedule",
+      "description": "Next scheduled maintenance date",
+      "schema": "date",
+      "writable": true
+    },
+    {
+      "@type": "Relationship",
+      "name": "monitors",
+      "displayName": "Monitors Road",
+      "description": "Road segment that this sensor monitors",
+      "target": "dtmi:fgcu:Road;1"
+    },
+    {
+      "@type": "Relationship",
+      "name": "partOfNetwork",
+      "displayName": "Sensor Network",
+      "description": "Traffic sensor network this device belongs to",
+      "target": "dtmi:fgcu:SensorNetwork;1"
+    },
+    {
+      "@type": "Command",
+      "name": "calibrate",
+      "displayName": "Calibrate Sensor",
+      "description": "Initiate sensor calibration procedure",
+      "response": {
+        "name": "calibrationResult",
+        "schema": "string"
+      }
+    },
+    {
+      "@type": "Command",
+      "name": "reset",
+      "displayName": "Reset Sensor",
+      "description": "Reset sensor to default settings",
+      "response": {
+        "name": "resetResult",
+        "schema": "string"
+      }
+    },
+    {
+      "@type": "Command",
+      "name": "updateConfiguration",
+      "displayName": "Update Configuration",
+      "description": "Update sensor configuration parameters",
+      "request": {
+        "name": "config",
+        "schema": {
+          "@type": "Object",
+          "fields": [
+            {
+              "name": "samplingRate",
+              "schema": "integer"
+            },
+            {
+              "name": "sensitivity",
+              "schema": "double"
+            },
+            {
+              "name": "reportingInterval",
+              "schema": "integer"
+            }
+          ]
+        }
+      },
+      "response": {
+        "name": "configResult",
+        "schema": "string"
+      }
+    }
+  ]
+}

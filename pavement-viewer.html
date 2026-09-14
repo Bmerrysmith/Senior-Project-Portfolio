@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FGCU Pavement Condition Viewer - QRL Analysis (v2.3)</title>
+    
+    <!-- External CSS -->
+    <link rel="stylesheet" href="css/pavement-viewer.css?v=2.3">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <div id="navbar">
+        <div>
+            <h1>🛣️ FGCU Pavement Condition Viewer</h1>
+            <div class="subtitle">Quantum Reinforcement Learning Pavement Analysis</div>
+        </div>
+        <div id="status">
+            <span class="status-dot"></span>
+            Ready
+        </div>
+    </div>
+
+    <!-- Traffic Button -->
+    <button class="traffic-btn" id="traffic-btn" onclick="toggleTraffic()">
+        🚦 Show Traffic
+    </button>
+
+    <!-- Instructions Panel -->
+    <div id="instructions">
+        <button class="close-btn" onclick="document.getElementById('instructions').style.display='none'">×</button>
+        <h3>How to Use</h3>
+        <ul>
+            <li>Click anywhere on the map to view that location</li>
+            <li>Street View will open automatically</li>
+            <li>QRL model analyzes pavement condition</li>
+            <li>Drag pegman to explore different views</li>
+            <li>Toggle traffic layer to see real-time conditions</li>
+            <li>Results appear in the panel below</li>
+        </ul>
+    </div>
+
+    <!-- Main Container -->
+    <div id="container">
+        <!-- Google Maps View -->
+        <div id="map"></div>
+
+        <!-- Google Street View -->
+        <div id="street-view"></div>
+    </div>
+
+    <!-- Pavement Condition Panel -->
+    <div id="condition-panel">
+        <h3>📊 Pavement Condition Analysis</h3>
+        
+        <div class="condition-info">
+            <div class="condition-label">Pavement Condition Index (PCI)</div>
+            <div class="pci-score">
+                <span class="pci-number condition-good" id="pci-value">--</span>
+                <span class="pci-max">/ 100</span>
+            </div>
+        </div>
+
+        <div class="condition-info">
+            <div class="condition-label">Condition Rating</div>
+            <div class="condition-value condition-good" id="condition-rating">Analyzing...</div>
+        </div>
+
+        <div class="location-info">
+            <div><strong>Location:</strong></div>
+            <div id="location-coords">Click on the map to analyze</div>
+            <div id="location-address" style="margin-top: 5px; color: #aaa;"></div>
+        </div>
+
+        <div id="loading" class="loading-indicator" style="display: none; margin-top: 15px;">
+            <div class="spinner"></div>
+            <span>Analyzing with Quantum ML...</span>
+        </div>
+
+        <div id="analysis-details" style="display: none;"></div>
+    </div>
+
+    <!-- External JavaScript -->
+    <script src="js/pavement-viewer.js?v=2.3"></script>
+    
+    <!-- Google Maps JavaScript API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvEovX0VVfU_o__8MFnj3oVmL_ba0wbLA&callback=initMap&libraries=places&loading=async" async defer></script>
+</body>
+</html>

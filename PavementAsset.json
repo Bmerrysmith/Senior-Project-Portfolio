@@ -1,0 +1,257 @@
+{
+  "@id": "dtmi:fgcu:PavementAsset;1",
+  "@type": "Interface",
+  "@context": [
+    "dtmi:dtdl:context;3"
+  ],
+  "displayName": "FGCU Pavement Asset",
+  "description": "Digital twin model for pavement condition tracking and road maintenance",
+  "contents": [
+    {
+      "@type": "Property",
+      "name": "assetId",
+      "displayName": "Asset ID",
+      "description": "Unique identifier for the pavement asset",
+      "schema": "string",
+      "writable": true
+    },
+    {
+      "@type": "Property",
+      "name": "roadSegmentId",
+      "displayName": "Road Segment ID",
+      "description": "Reference to the associated road segment",
+      "schema": "string",
+      "writable": true
+    },
+    {
+      "@type": "Property",
+      "name": "pci",
+      "displayName": "Pavement Condition Index (PCI)",
+      "description": "PCI score from 0-100, where 100 is excellent condition",
+      "schema": "integer",
+      "writable": true,
+      "comment": "80-100: Excellent, 70-79: Good, 60-69: Fair, 0-59: Poor"
+    },
+    {
+      "@type": "Property",
+      "name": "iri",
+      "displayName": "International Roughness Index (IRI)",
+      "description": "IRI value in inches/mile measuring road roughness",
+      "schema": "double",
+      "unit": "inch",
+      "writable": true,
+      "comment": "0-95: Good, 95-170: Acceptable, >170: Poor"
+    },
+    {
+      "@type": "Property",
+      "name": "surfaceType",
+      "displayName": "Surface Type",
+      "description": "Type of pavement surface material",
+      "schema": {
+        "@type": "Enum",
+        "valueSchema": "string",
+        "enumValues": [
+          {
+            "name": "asphalt",
+            "displayName": "Asphalt",
+            "enumValue": "asphalt"
+          },
+          {
+            "name": "concrete",
+            "displayName": "Concrete",
+            "enumValue": "concrete"
+          },
+          {
+            "name": "composite",
+            "displayName": "Composite",
+            "enumValue": "composite"
+          },
+          {
+            "name": "gravel",
+            "displayName": "Gravel",
+            "enumValue": "gravel"
+          }
+        ]
+      },
+      "writable": true
+    },
+    {
+      "@type": "Property",
+      "name": "condition",
+      "displayName": "Condition Category",
+      "description": "Overall condition classification",
+      "schema": {
+        "@type": "Enum",
+        "valueSchema": "string",
+        "enumValues": [
+          {
+            "name": "excellent",
+            "displayName": "Excellent",
+            "enumValue": "excellent"
+          },
+          {
+            "name": "good",
+            "displayName": "Good",
+            "enumValue": "good"
+          },
+          {
+            "name": "fair",
+            "displayName": "Fair",
+            "enumValue": "fair"
+          },
+          {
+            "name": "poor",
+            "displayName": "Poor",
+            "enumValue": "poor"
+          },
+          {
+            "name": "failed",
+            "displayName": "Failed",
+            "enumValue": "failed"
+          }
+        ]
+      },
+      "writable": true
+    },
+    {
+      "@type": "Property",
+      "name": "lastInspectionDate",
+      "displayName": "Last Inspection Date",
+      "description": "Date of the most recent pavement inspection",
+      "schema": "dateTime",
+      "writable": true
+    },
+    {
+      "@type": "Property",
+      "name": "nextInspectionDate",
+      "displayName": "Next Scheduled Inspection",
+      "description": "Scheduled date for the next pavement inspection",
+      "schema": "dateTime",
+      "writable": true
+    },
+    {
+      "@type": "Property",
+      "name": "maintenanceHistory",
+      "displayName": "Maintenance History",
+      "description": "Record of maintenance activities performed",
+      "schema": {
+        "@type": "Array",
+        "elementSchema": {
+          "@type": "Object",
+          "fields": [
+            {
+              "name": "date",
+              "schema": "dateTime"
+            },
+            {
+              "name": "type",
+              "schema": "string"
+            },
+            {
+              "name": "cost",
+              "schema": "double"
+            },
+            {
+              "name": "description",
+              "schema": "string"
+            }
+          ]
+        }
+      },
+      "writable": true
+    },
+    {
+      "@type": "Property",
+      "name": "distressTypes",
+      "displayName": "Distress Types",
+      "description": "Types of pavement distress observed",
+      "schema": {
+        "@type": "Array",
+        "elementSchema": "string"
+      },
+      "writable": true,
+      "comment": "e.g., cracking, rutting, potholes, raveling, bleeding"
+    },
+    {
+      "@type": "Property",
+      "name": "estimatedRemainingLife",
+      "displayName": "Estimated Remaining Service Life",
+      "description": "Predicted years until major rehabilitation needed",
+      "schema": "integer",
+      "unit": "year",
+      "writable": true
+    },
+    {
+      "@type": "Property",
+      "name": "reconstructionPriority",
+      "displayName": "Reconstruction Priority",
+      "description": "Priority level for reconstruction scheduling (1-10, 10 highest)",
+      "schema": "integer",
+      "writable": true
+    },
+    {
+      "@type": "Telemetry",
+      "name": "pciTrend",
+      "displayName": "PCI Trend",
+      "description": "Time-series telemetry of PCI values for degradation tracking",
+      "schema": {
+        "@type": "Object",
+        "fields": [
+          {
+            "name": "timestamp",
+            "schema": "dateTime"
+          },
+          {
+            "name": "pciValue",
+            "schema": "integer"
+          }
+        ]
+      }
+    },
+    {
+      "@type": "Telemetry",
+      "name": "iriTrend",
+      "displayName": "IRI Trend",
+      "description": "Time-series telemetry of IRI values for roughness tracking",
+      "schema": {
+        "@type": "Object",
+        "fields": [
+          {
+            "name": "timestamp",
+            "schema": "dateTime"
+          },
+          {
+            "name": "iriValue",
+            "schema": "double"
+          }
+        ]
+      }
+    },
+    {
+      "@type": "Relationship",
+      "name": "belongsToRoad",
+      "displayName": "Belongs to Road",
+      "description": "Relationship to the parent road segment",
+      "target": "dtmi:fgcu:Road;1"
+    },
+    {
+      "@type": "Component",
+      "name": "location",
+      "displayName": "Geographic Location",
+      "description": "GPS coordinates of the pavement asset",
+      "schema": {
+        "@type": "Object",
+        "fields": [
+          {
+            "name": "latitude",
+            "schema": "double"
+          },
+          {
+            "name": "longitude",
+            "schema": "double"
+          }
+        ]
+      }
+    }
+  ]
+}
