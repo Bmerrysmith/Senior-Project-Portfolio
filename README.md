@@ -14,9 +14,7 @@ Focus: Agentic AI, applied backend systems, and secure cloud architecture
 The codebases here are institutional and not public, but this is the core of my applied AI work and the context behind the projects below.
  
 - Co-developing MAIVA, an AI Avatar Training Platform for mental health training scenarios, alongside a Master's thesis researcher. My role covers backend architecture (AWS API Gateway, Lambda, Aurora, Cognito, IAM), LLM-driven persona generation through the Anthropic API, and the React/Vite/Tailwind frontend, translating requirements gathered from two university colleges into the platform's data model.
-- Helped coordinate and deliver the 2026 FGCU Summer AI Academy, serving 500+ participants across 150+ hours of instructional content.
-- Evaluate emerging agentic AI frameworks to inform the institute's technology roadmap.
-  
+- Helped coordinate and deliver the 2026 FGCU Summer AI Academy, serving 500+ participants across 150+ hours of instructional content.  
 - Built and maintain 14+ AI tutoring tools using the OpenAI Custom GPT Builder, deployed across FGCU's Engineering Learning Hub to support tutoring, mentoring, and knowledge assistance workflows.
 ---
  
@@ -27,7 +25,7 @@ The codebases here are institutional and not public, but this is the core of my 
  
 ### What it is
  
-A multi-tenant RAG-based email triage and daily digest system connected to Outlook via the Microsoft Graph API. I built this to understand a full RAG pipeline end to end, so I deliberately avoided LangChain or any similar abstraction layer.
+A multi-tenant RAG-based email agent and daily digest system connected to Outlook via the Microsoft Graph API. I built this to understand a full RAG pipeline end to end, so I deliberately avoided LangChain or any similar abstraction layer.
  
 ### What I built
  
