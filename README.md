@@ -3,7 +3,7 @@
 Software Engineering, Florida Gulf Coast University | Expected May 2027
 Focus: Agentic AI, applied backend systems, and secure cloud architecture
  
-[GitHub](https://github.com/samtusick) · [LinkedIn](https://linkedin.com/in/samuel-tusick) · [Portfolio](https://samtusick.github.io/PortfolioWebsite/)
+[GitHub](https://github.com/samtusick) · [LinkedIn](https://linkedin.com/in/samuel-tusick) · [Portfolio]([https://samtusick.github.io/PortfolioWebsite/](https://samtusick.github.io/Portfolio-Website/))
  
 ---
  
