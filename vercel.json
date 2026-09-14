@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "clean/web/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/clean/web/pavement-viewer.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/clean/web/$1"
+    }
+  ]
+}

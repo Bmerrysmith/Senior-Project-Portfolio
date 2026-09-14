@@ -1,0 +1,236 @@
+{
+  "$dtId": "dtmi:fgcu:Road;1",
+  "$etag": "W/\"7e67d78e-4c5e-4c34-8b7b-8b7b8b7b8b7b\"",
+  "$metadata": {
+    "$model": "dtmi:fgcu:Road;1",
+    "name": {
+      "lastUpdateTime": "2024-01-20T10:00:00.000Z"
+    },
+    "length": {
+      "lastUpdateTime": "2024-01-20T10:00:00.000Z"
+    },
+    "coordinates": {
+      "lastUpdateTime": "2024-01-20T10:00:00.000Z"
+    },
+    "trafficLevel": {
+      "lastUpdateTime": "2024-01-20T10:00:00.000Z"
+    },
+    "averageSpeed": {
+      "lastUpdateTime": "2024-01-20T10:00:00.000Z"
+    },
+    "vehicleCount": {
+      "lastUpdateTime": "2024-01-20T10:00:00.000Z"
+    }
+  },
+  "@id": "dtmi:fgcu:Road;1",
+  "@type": "Interface",
+  "@context": [
+    "dtmi:dtdl:context;3"
+  ],
+  "displayName": "FGCU Road Segment",
+  "description": "Digital twin model for road segments in FGCU transportation network",
+  "contents": [
+    {
+      "@type": "Property",
+      "name": "name",
+      "displayName": "Road Name",
+      "description": "The name or identifier of the road segment",
+      "schema": "string",
+      "writable": true
+    },
+    {
+      "@type": "Property", 
+      "name": "roadType",
+      "displayName": "Road Type",
+      "description": "Classification of the road (highway, arterial, collector, local)",
+      "schema": {
+        "@type": "Enum",
+        "valueSchema": "string",
+        "enumValues": [
+          {
+            "name": "highway",
+            "displayName": "Highway",
+            "enumValue": "highway"
+          },
+          {
+            "name": "arterial", 
+            "displayName": "Arterial Road",
+            "enumValue": "arterial"
+          },
+          {
+            "name": "collector",
+            "displayName": "Collector Road", 
+            "enumValue": "collector"
+          },
+          {
+            "name": "local",
+            "displayName": "Local Road",
+            "enumValue": "local"
+          }
+        ]
+      },
+      "writable": true
+    },
+    {
+      "@type": "Property",
+      "name": "length",
+      "displayName": "Road Length",
+      "description": "Length of the road segment in meters",
+      "schema": "double",
+      "unit": "metre",
+      "writable": true
+    },
+    {
+      "@type": "Property",
+      "name": "coordinates",
+      "displayName": "GPS Coordinates",
+      "description": "Array of GPS coordinates defining the road path",
+      "schema": {
+        "@type": "Array",
+        "elementSchema": {
+          "@type": "Object",
+          "fields": [
+            {
+              "name": "latitude",
+              "schema": "double"
+            },
+            {
+              "name": "longitude", 
+              "schema": "double"
+            }
+          ]
+        }
+      },
+      "writable": true
+    },
+    {
+      "@type": "Property",
+      "name": "lanes",
+      "displayName": "Number of Lanes",
+      "description": "Total number of traffic lanes",
+      "schema": "integer",
+      "writable": true
+    },
+    {
+      "@type": "Telemetry",
+      "name": "trafficLevel",
+      "displayName": "Traffic Level",
+      "description": "Current traffic congestion level",
+      "schema": {
+        "@type": "Enum",
+        "valueSchema": "string",
+        "enumValues": [
+          {
+            "name": "low",
+            "displayName": "Low Traffic",
+            "enumValue": "LOW"
+          },
+          {
+            "name": "minimal",
+            "displayName": "Minimal Traffic",
+            "enumValue": "MINIMAL"
+          },
+          {
+            "name": "light",
+            "displayName": "Light Traffic",
+            "enumValue": "LIGHT"
+          },
+          {
+            "name": "moderate",
+            "displayName": "Moderate Traffic",
+            "enumValue": "MODERATE"
+          },
+          {
+            "name": "heavy",
+            "displayName": "Heavy Traffic",
+            "enumValue": "HEAVY"
+          }
+        ]
+      }
+    },
+    {
+      "@type": "Telemetry",
+      "name": "averageSpeed",
+      "displayName": "Average Speed",
+      "description": "Average vehicle speed on this road segment",
+      "schema": "double",
+      "unit": "milePerHour"
+    },
+    {
+      "@type": "Telemetry",
+      "name": "vehicleCount",
+      "displayName": "Vehicle Count",
+      "description": "Number of vehicles detected in the last hour",
+      "schema": "integer"
+    },
+    {
+      "@type": "Telemetry",
+      "name": "occupancy",
+      "displayName": "Road Occupancy",
+      "description": "Percentage of road capacity currently occupied",
+      "schema": "double",
+      "unit": "percent"
+    },
+    {
+      "@type": "Property",
+      "name": "speedLimit",
+      "displayName": "Speed Limit",
+      "description": "Posted speed limit for this road segment",
+      "schema": "integer",
+      "unit": "milePerHour",
+      "writable": true
+    },
+    {
+      "@type": "Property",
+      "name": "capacity",
+      "displayName": "Traffic Capacity",
+      "description": "Maximum vehicle capacity per hour",
+      "schema": "integer",
+      "writable": true
+    },
+    {
+      "@type": "Relationship",
+      "name": "connectedTo",
+      "displayName": "Connected Roads",
+      "description": "Roads that connect to this segment",
+      "target": "dtmi:fgcu:Road;1"
+    },
+    {
+      "@type": "Relationship", 
+      "name": "hasSensors",
+      "displayName": "Traffic Sensors",
+      "description": "Sensors monitoring this road segment",
+      "target": "dtmi:fgcu:TrafficSensor;1"
+    },
+    {
+      "@type": "Command",
+      "name": "updateTrafficData",
+      "displayName": "Update Traffic Data",
+      "description": "Manually update traffic information for this road",
+      "request": {
+        "name": "trafficInfo",
+        "schema": {
+          "@type": "Object",
+          "fields": [
+            {
+              "name": "level",
+              "schema": "string"
+            },
+            {
+              "name": "speed",
+              "schema": "double"
+            },
+            {
+              "name": "count",
+              "schema": "integer"
+            }
+          ]
+        }
+      },
+      "response": {
+        "name": "updateResult",
+        "schema": "string"
+      }
+    }
+  ]
+}

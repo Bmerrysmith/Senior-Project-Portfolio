@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FGCU Integrated Traffic & Pavement Viewer - QRL ML (v2.2)</title>
+    
+    <!-- External CSS -->
+    <link rel="stylesheet" href="css/integrated-traffic-viewer.css?v=2.2">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <div id="navbar">
+        <div>
+            <h1>🚦 FGCU Integrated Traffic & Pavement Viewer</h1>
+            <div class="subtitle">Real-time Traffic + QRL Pavement Analysis using Google Street View</div>
+        </div>
+        <div id="status">
+            <span class="status-dot"></span>
+            <span>Ready</span>
+        </div>
+    </div>
+
+    <!-- View Controls -->
+    <div class="view-controls">
+        <button class="view-btn" id="street-view-btn" onclick="toggleStreetView()">
+            📷 View Street View
+        </button>
+        <button class="view-btn" id="traffic-btn" onclick="toggleTraffic()">
+            🚦 Toggle Traffic Layer
+        </button>
+        <button class="view-btn" id="analyze-btn" onclick="analyzePavement()" style="background: rgba(138, 43, 226, 0.9);">
+            ⚛️ Analyze Pavement (QRL)
+        </button>
+    </div>
+
+    <!-- Legend Panel -->
+    <div id="legend">
+        <h3>🚦 Traffic & Pavement</h3>
+        
+        <div class="legend-section">
+            <h4>Traffic Levels</h4>
+            <div class="legend-item">
+                <div class="color-box" style="background: #ff4444;"></div>
+                <span>Heavy - High congestion</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: #ff8c00;"></div>
+                <span>Moderate - Some delays</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: #ffd700;"></div>
+                <span>Light - Normal flow</span>
+            </div>
+            <div class="legend-item">
+                <div class="color-box" style="background: #32cd32;"></div>
+                <span>Minimal - Light traffic</span>
+            </div>
+        </div>
+
+        <div class="legend-section">
+            <h4>QRL Risk Levels</h4>
+            <div class="legend-item">
+                <span style="font-size: 20px; margin-right: 10px;">🟢</span>
+                <span>NORMAL - Excellent</span>
+            </div>
+            <div class="legend-item">
+                <span style="font-size: 20px; margin-right: 10px;">🟡</span>
+                <span>WATCH - Monitor</span>
+            </div>
+            <div class="legend-item">
+                <span style="font-size: 20px; margin-right: 10px;">🟠</span>
+                <span>CONGESTED - Action needed</span>
+            </div>
+            <div class="legend-item">
+                <span style="font-size: 20px; margin-right: 10px;">🔴</span>
+                <span>CRITICAL - Urgent repair</span>
+            </div>
+        </div>
+
+        <div class="legend-section" style="border-bottom: none;">
+            <div style="font-size: 11px; color: #666;">
+                Last update: <span id="last-update">--:--</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Google Maps View -->
+    <div id="map"></div>
+
+    <!-- Google Street View (Overlay) -->
+    <div id="street-view"></div>
+
+    <!-- Pavement Condition Panel -->
+    <div id="condition-panel">
+        <h3>📊 Pavement Condition Analysis</h3>
+        
+        <div class="condition-info">
+            <div class="condition-label">Pavement Condition Index (PCI)</div>
+            <div class="pci-score">
+                <span class="pci-number condition-good" id="pci-value">--</span>
+                <span class="pci-max">/ 100</span>
+            </div>
+        </div>
+
+        <div class="condition-info">
+            <div class="condition-label">Condition Rating</div>
+            <div class="condition-value condition-good" id="condition-rating">Click "Analyze Pavement" to begin</div>
+        </div>
+
+        <div class="location-info">
+            <div><strong>Location:</strong></div>
+            <div id="location-coords">Click on the map to select a location</div>
+            <div id="location-address" style="margin-top: 5px; color: #aaa;"></div>
+        </div>
+
+        <div id="traffic-data" class="traffic-info" style="display: none;">
+            <h4>🚦 Traffic Data</h4>
+            <div class="traffic-metric">
+                <span class="label">Current Volume:</span>
+                <span class="value" id="traffic-volume">--</span>
+            </div>
+            <div class="traffic-metric">
+                <span class="label">Traffic Level:</span>
+                <span class="value" id="traffic-level">--</span>
+            </div>
+            <div class="traffic-metric">
+                <span class="label">Speed (mph):</span>
+                <span class="value" id="traffic-speed">--</span>
+            </div>
+        </div>
+
+        <div id="loading" class="loading-indicator" style="display: none; margin-top: 15px;">
+            <div class="spinner"></div>
+            <span>Analyzing with Quantum ML...</span>
+        </div>
+
+        <div id="analysis-details" style="display: none;"></div>
+    </div>
+
+    <!-- External JavaScript -->
+    <script src="js/integrated-traffic-viewer.js?v=2.2"></script>
+    
+    <!-- Google Maps JavaScript API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAvEovX0VVfU_o__8MFnj3oVmL_ba0wbLA&callback=initMap&libraries=places&loading=async" async defer></script>
+</body>
+</html>
