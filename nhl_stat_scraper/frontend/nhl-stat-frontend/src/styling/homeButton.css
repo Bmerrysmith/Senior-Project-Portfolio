@@ -1,0 +1,17 @@
+/* Home Button Styling */
+
+.home-button {
+  position: fixed;       
+  top: 20px;             
+  right: 20px;             
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.5rem;
+  color: #F0F0F0;
+  z-index: 1000;   
+}
+
+.home-button:hover{
+    color: #1F75FE
+}

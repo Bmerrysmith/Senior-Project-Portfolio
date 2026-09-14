@@ -1,0 +1,51 @@
+/* Number and Season Input Styling */
+
+.control-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    margin: 2rem auto;
+
+}
+.number-input {
+    font-family: 'Michroma', sans-serif;
+    font-size: 1rem;
+    color: #F0F0F0;  
+    text-shadow: 1px 1px 2.5px #1F75FE;
+}
+
+.number-content {
+    margin-left: 1rem;
+    background-color: #0B0B0B;
+    color: #F0F0F0;
+    border-color: #1F75FE;
+}
+
+.radio-input {
+    font-family: 'Michroma', sans-serif;
+    font-size: 1rem;
+    color: #F0F0F0;  
+    text-shadow: 1px 1px 2.5px #1F75FE;
+}
+
+.radio-option {
+    margin-left: 2rem;
+}
+
+.page-summary {
+    font-family: 'Michroma', sans-serif;
+    font-size: 1rem;
+    color: #F0F0F0;  
+    text-shadow: 1px 1px 2.5px #1F75FE;
+
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+}
+
+input[type="radio"]:checked {
+  accent-color: #1F75FE; 
+}

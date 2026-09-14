@@ -1,0 +1,9 @@
+{
+  "Variables": {
+    "CLIENT_ID": "5536b9ae-bddd-478b-ada2-3b48f6a1c683",
+    "AUTHORITY": "https://login.microsoftonline.com/consumers",
+    "GRAPH_SCOPES": "Mail.Read Mail.Send",
+    "REDIRECT_URI": "http://localhost:5000/auth/callback",
+    "FLASK_SECRET_KEY": "unused-in-lambda"
+  }
+}

@@ -1,0 +1,5 @@
+chromedriver-autoinstaller==0.6.4
+Flask==3.1.1
+flask-cors==6.0.1
+selenium>=4.28.1
+gunicorn==21.2.0

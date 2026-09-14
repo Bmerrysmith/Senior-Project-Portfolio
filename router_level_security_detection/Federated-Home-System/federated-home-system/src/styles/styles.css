@@ -1,0 +1,94 @@
+/* General body styling */
+body {
+  font-family: Arial, sans-serif;
+  padding-top: 48px;
+  background-color: #f8f9fa;
+}
+
+/* Main container styling */
+.main-container {
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Container styling */
+.container {
+  max-width: 1400px;
+  padding-left: 20px;
+  padding-right: 20px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Card styling */
+.card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: #ffffff;
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+}
+
+/* Section headings */
+h3 {
+  color: #2c3e50;
+  margin-bottom: 1.25rem;
+  font-weight: 600;
+}
+
+/* Table styling */
+.table {
+  margin-top: 1rem;
+  background-color: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table-striped tbody tr:hover {
+  background-color: rgba(52, 152, 219, 0.1);
+}
+
+/* Badge styling */
+.badge {
+  font-size: 0.9em;
+  padding: 0.5em 0.75em;
+  border-radius: 6px;
+}
+
+/* Button group styling */
+.btn-group .btn {
+  margin-right: 0.5rem;
+  border-radius: 6px;
+}
+
+/* Chart responsiveness */
+canvas {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+  margin-bottom: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+  .container {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    padding-top: 50px;
+  }
+
+  .container {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .card {
+    margin-bottom: 1rem;
+    padding: 1rem;
+  }
+}

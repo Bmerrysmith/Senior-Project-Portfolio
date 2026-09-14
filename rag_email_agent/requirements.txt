@@ -1,0 +1,10 @@
+flask
+msal
+requests
+python-dotenv
+psycopg[binary]
+pgvector
+beautifulsoup4
+email-reply-parser
+cryptography
+boto3

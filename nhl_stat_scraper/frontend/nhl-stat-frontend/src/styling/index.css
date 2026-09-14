@@ -1,0 +1,34 @@
+/* Index Styling */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: #0B0B0B;
+  font-family: 'Michroma', sans-serif;
+  color: #F0F0F0;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+section {
+  scroll-margin-top: 60px;
+}
+
+/* Scroll Bar */
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0B0B0B;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1F75FE;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #1F75FE; 
+}

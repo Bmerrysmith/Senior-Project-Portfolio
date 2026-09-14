@@ -1,0 +1,17 @@
+.git/
+.venv/
+.vscode/
+__pycache__/
+**/__pycache__/
+*.pyc
+.env
+.env.example
+token_cache.bin
+*.stackdump
+PLANNING.md
+README.md
+CLAUDE.md
+docker-compose.yml
+db/
+deploy/
+app.py
