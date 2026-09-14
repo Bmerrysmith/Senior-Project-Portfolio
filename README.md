@@ -66,6 +66,30 @@ Python, Flask, SSH, SQLite
  
 This was the first project where I owned architecture decisions for a team instead of just contributing code, and where "production-ready" had to mean something concrete: tested, documented, and handed off cleanly to teammates who maintained it after I moved on.
  
+------
+ 
+## Switch4Good Database System
+ 
+**Role:** Team Lead | January 2026 to May 2026<br>
+**Links:** [Link to Repo](https://github.com/SamTusick/Switch4Good_DataBaseSystem)
+ 
+### What it is
+ 
+A PostgreSQL database and schema supporting a nonprofit's operations across participation tracking, projects, partnerships, and outcomes.
+ 
+### What I built
+ 
+- Led development of a normalized PostgreSQL schema modeling participation, projects, partnerships, and outcomes data.
+- Designed the schema to support data-driven operations at scale: 100+ universities and 1,500+ students.
+- Coordinated a team through requirements gathering and schema design decisions.
+### Stack
+ 
+PostgreSQL, SQL, Data Engineering
+ 
+### What I took away
+ 
+This was less about writing code and more about modeling ambiguity correctly the first time. A schema that has to serve a nonprofit's real reporting needs across multiple stakeholder groups punishes bad assumptions early, and there's no framework that fixes a bad data model after the fact.
+ 
 ---
  
 ## NHL Stat Scraper
