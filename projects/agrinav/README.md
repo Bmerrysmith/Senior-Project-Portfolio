@@ -3,8 +3,10 @@
 A rice/weed detector for an autonomous paddy tractor, plus the data, training, and
 evaluation infrastructure needed to tell whether its numbers can be trusted.
 
-Curated from [`Bmerrysmith/Autonomous-tractor-system`](https://github.com/Bmerrysmith/Autonomous-tractor-system)
-at commit `ed93be5`. Perception only: no datasets, weights, navigation, or
+Senior-project snapshot curated from the original private tractor monorepo
+at commit `ed93be5`. The maintained public source is
+[AgriNav Perception](https://github.com/Bmerrysmith/agrinav-perception), including
+later baseline findings. Perception only: no datasets, weights, navigation, or
 treatment/actuation logic are included.
 
 **Contents:** [Problem](#the-problem) · [Model](#model-architecture) · [Data](#dataset-engineering) ·
